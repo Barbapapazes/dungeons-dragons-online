@@ -1,0 +1,18 @@
+{
+  "name": "dungeons-dragons-online",
+  "version": "0.0.1",
+  "description": "",
+  "authors": {
+    "name": "Esteban Soubiran",
+    "email": "esteban.soubiran@insa-cvl.fr"
+  },
+  "repository": "https://github.com/Barbapapazes/dungeons-dragons-online.git/dungeons-dragons-online",
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "^1.8.0"
+  }
+}
