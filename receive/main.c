@@ -10,6 +10,5 @@ int main()
   sleep(2);
 
   printf("world");
-
   return 0;
 }
