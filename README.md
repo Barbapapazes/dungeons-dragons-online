@@ -4,6 +4,7 @@ il faut ajouter la gestion du c
 il faut ajouter le makefile
 il faut ajotuer un workflow pour vérifier que le C est bon (que ça compile)
 il faut ajotuer un workflow pour vérifier que le python est bon (lint)
+expliquer le fonctionnement du précommit
 
 # Dungeons and Dragons online
 

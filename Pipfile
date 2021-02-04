@@ -7,6 +7,10 @@ name = "pypi"
 
 [dev-packages]
 flake8 = "*"
+pre-commit = "*"
 
 [requires]
 python_version = "3.9"
+
+[scripts]
+dev = "python main.py"

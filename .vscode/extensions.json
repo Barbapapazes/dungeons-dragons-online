@@ -1,0 +1,10 @@
+  {
+    "recommendations": [
+      "ms-python.python",
+      "kiteco.kite",
+      "njpwerner.autodocstring",
+      "ms-python.vscode-pylance",
+      "ms-vscode.cpptools",
+      "nitayneeman.git-semantic-commit"
+    ]
+  }
