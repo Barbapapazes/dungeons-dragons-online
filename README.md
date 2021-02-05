@@ -16,6 +16,17 @@ L'ensemble des exécutables seront mis dans le dossier `build`.
 
 La fichier `main.py` à la racine du projet sera le point d'entrée. Le reste des fichiers relatifs aux pythons seront disposé dans différents dossiers à la racine du projet.
 
+You need **python 3.9** and **pip** installed on your machine.
+
+```sh
+# install pipenv
+$ pip install pipenv
+# install all packages
+$ pipenv install
+# start in dev mode
+$ pipenv run dev
+```
+
 ## Docs
 
 Read the docs [here](https://barbapapazes.github.io/dungeons-dragons-online/).
