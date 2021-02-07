@@ -20,11 +20,11 @@ void stop(char *msg)
     exit(EXIT_FAILURE);
 }
 
-
-int main(int argc, char ** argv){
+int main(int argc, char **argv)
+{
 
     //UDP Socket
-    int sockfd = socket(PF_INET,SOCK_DGRAM,0);
+    int sockfd = socket(PF_INET, SOCK_DGRAM, 0);
     if (sockfd == -1)
         stop("socket()");
 
@@ -34,12 +34,13 @@ int main(int argc, char ** argv){
     struct sockaddr_in serv_addr;
     bzero(&serv_addr, sizeof(serv_addr));
     //Setting up
-    serv_addr.sin_family = AF_INET; 
-    inet_aton(hostname, &serv_addr.sin_addr); 
+    serv_addr.sin_family = AF_INET;
+    inet_aton(hostname, &serv_addr.sin_addr);
     serv_addr.sin_port = htons(1234);
 
     //Binding
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) ==-1) {
+    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1)
+    {
         close(sockfd);
         stop("Error when binding\n");
     }
@@ -49,20 +50,22 @@ int main(int argc, char ** argv){
     struct sockaddr_in client_addr;
     bzero(&client_addr, sizeof(client_addr));
     int client_len = sizeof(client_addr);
-    
+
     //Sending/Receiving requests
-    while(1) {
+    while (1)
+    {
 
         //If the server receives something
-        if ((receipt = recvfrom(sockfd, &buff, sizeof(buff), 0, (struct sockaddr *)&client_addr, &client_len))==-1)
+        if ((receipt = recvfrom(sockfd, &buff, sizeof(buff), 0, (struct sockaddr *)&client_addr, &client_len)) == -1)
         {
             close(sockfd);
             stop("Error when receiving packet\n");
         }
 
         //If the information received is not empty
-        if (receipt != 0) {
-            buff[receipt] = '\0'; 
+        if (receipt != 0)
+        {
+            buff[receipt] = '\0';
 
             //Writing on STDOUT the received message
             write(STDOUT_FILENO, buff, strlen(buff));
@@ -70,9 +73,7 @@ int main(int argc, char ** argv){
             receipt = 0;
             return 0;
         }
-
     }
 
-    return 0;   
+    return 0;
 }
-

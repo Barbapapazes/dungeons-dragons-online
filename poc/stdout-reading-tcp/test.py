@@ -30,5 +30,5 @@ def run(cmd):
             sys.stdout.flush()
 
 
-run("./udpserver")
+run("./tcpserver")
 print("end of the python program")
