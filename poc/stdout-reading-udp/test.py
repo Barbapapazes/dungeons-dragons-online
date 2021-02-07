@@ -13,7 +13,7 @@ def run(cmd):
     return proc.returncode, stdout, stderr
 
 
-code, out, err = run([sys.executable, "poc/stdout-reading-udp/print.py"])
+code, out, err = run("./udpserver")
 out = out.decode("ascii")
 err = err.decode("ascii")
 print("out: ", out)
