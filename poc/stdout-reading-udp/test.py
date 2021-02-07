@@ -17,9 +17,12 @@ def run(cmd):
     )
 
     while True:
-        out = proc.stdout.readline()
-        if out == "" and proc.poll() != None:
-            break
+        out = proc.stdout.read(5)
+        if proc.poll() is not None:
+            if out is not None:
+                out = out.decode("ascii")
+                sys.stdout.write(out)
+            return
         if out != "":
             out = out.decode("ascii")
             sys.stdout.write(out)
