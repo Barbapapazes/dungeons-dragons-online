@@ -43,7 +43,7 @@ int main(int argc, char ** argv){
     int receipt;
     int serv_len = sizeof(serv_addr);
 
-    if (sendto(sockfd, "PING", 4, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) ==-1)
+    if (sendto(sockfd, "PING\n", 5, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) ==-1)
     {
         close(sockfd);
         stop("Error when sending\n");

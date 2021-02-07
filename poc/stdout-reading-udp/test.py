@@ -8,14 +8,15 @@ def run(cmd):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    stdout, stderr = proc.communicate()
 
-    return proc.returncode, stdout, stderr
+    while True:
+        out = proc.stdout.readline()
+        if out == "" and proc.poll() != None:
+            break
+        if out != "":
+            out = out.decode("ascii")
+            sys.stdout.write(out)
+            sys.stdout.flush()
 
 
-code, out, err = run("./udpserver")
-out = out.decode("ascii")
-err = err.decode("ascii")
-print("out: ", out)
-print("err: ", err)
-print("exit: ", code)
+run("./udpserver")

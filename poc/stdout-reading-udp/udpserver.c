@@ -68,7 +68,6 @@ int main(int argc, char ** argv){
             write(STDOUT_FILENO, buff, strlen(buff));
 
             receipt = 0;
-            return 0;
         }
 
     }
