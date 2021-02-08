@@ -9,4 +9,6 @@
   "python.linting.flake8Enabled": true,
   "python.formatting.provider": "black",
   "python.languageServer": "Pylance",
+  "files.eol": "\n",
+  "editor.formatOnSave": true
 }
