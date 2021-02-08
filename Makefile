@@ -13,7 +13,7 @@ send: send/main.c
 	@gcc -o build/send send/main.c 
 
 clean:
-	@rm -f build/* poc/subprocess-popen/sub poc/serialization/udpclient poc/serialization/udpserver poc/stdout-reading-udp/udpclient poc/stdout-reading-udp/udpserver
+	@rm -f build/* poc/subprocess-popen/sub poc/serialization/udpclient poc/serialization/udpserver poc/stdout-reading-udp/udpclient poc/stdout-reading-udp/udpserver poc/stdout-reading-tcp/tcpserver poc/stdout-reading-tcp/tcpclient poc/pygame-tcp/tcpserver poc/pygame-tcp/tcpclient
 
 poc:
 	@echo create subprocess-popen
