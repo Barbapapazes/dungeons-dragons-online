@@ -20,11 +20,11 @@ int main(int argc, char *argv[])
 {
 
     char buffer[BUFSIZ];
-    int n, i = 0;
     int sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
         stop("socket()");
-
+    if (argc != 2)
+        stop("arg");
     struct sockaddr_in cli_addr;
     bzero(&cli_addr, sizeof(cli_addr));
 
@@ -34,7 +34,9 @@ int main(int argc, char *argv[])
     cli_addr.sin_port = htons(1234);
     if (connect(sockfd, (struct sockaddr *)&cli_addr, sizeof(struct sockaddr)) == -1)
         stop("connect()");
-    if (send(sockfd, "PING\n", 5, 0) == -1)
+    sprintf(buffer, "%s\n", argv[1]);
+    sleep(10);
+    if (send(sockfd, buffer, strlen(buffer), 0) == -1)
         stop("send()");
     if (close(sockfd) == -1)
         stop("close");

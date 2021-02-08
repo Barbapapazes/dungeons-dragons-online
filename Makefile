@@ -24,3 +24,7 @@ poc:
 	@echo create stdout-reading-udp
 	@gcc -o poc/stdout-reading-udp/udpclient poc/stdout-reading-udp/udpclient.c
 	@gcc -o poc/stdout-reading-udp/udpserver poc/stdout-reading-udp/udpserver.c
+	@gcc -o poc/stdout-reading-tcp/tcpserver poc/stdout-reading-tcp/tcpserver.c
+	@gcc -o poc/stdout-reading-tcp/tcpclient poc/stdout-reading-tcp/tcpclient.c
+	@gcc -o poc/pygame-tcp/tcpclient poc/pygame-tcp/tcpclient.c
+	@gcc -o poc/pygame-tcp/tcpserver poc/pygame-tcp/tcpserver.c
