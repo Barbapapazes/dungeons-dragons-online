@@ -10,7 +10,7 @@
 
 ### Lancement des programmes :
 
-- Pour pouvoir lancer le programme python il faut respecter la syntaxe suivante : `game.py <server_port> <client_port>` sinon le programme lève une exception
+- Pour pouvoir lancer le programme python il faut respecter la syntaxe suivante : `python3 game.py <server_port> <client_port>` sinon le programme lève une exception. <br>`<server_port> != <client_port>` <br>_exemple : python3 game.py 8000 8001 <br> dans un autre terminal : python3 game.py 8001 8000_
 - Le jeu est pour l'instant seulement jouable à 2. C'est pour cela qu'il faut indiquer le port client.
 
 ### Programme Python :
