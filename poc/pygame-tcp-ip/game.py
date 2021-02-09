@@ -9,6 +9,7 @@ import subprocess
 import select
 import threading
 import queue
+import socket
 
 
 class Game:
@@ -20,25 +21,31 @@ class Game:
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(5, 5)
 
+        self.my_port = sys.argv[1]
+        # send a request to 8.8.8.8 to know the ip adress from the computer
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        tmp_ip = s.getsockname()[0]
+        self.my_ip = str(str(tmp_ip) + ":" + self.my_port)
+        print(self.my_ip)
+        self.client_port = set()
+
         self.players = {}
-        self.players["127.0.0.1:" + sys.argv[1]] = Player()
+        self.players[self.my_ip] = Player()
         # Main player is in red to recognize it
-        self.players["127.0.0.1:" + sys.argv[1]].surface.fill((255, 0, 0))
+        self.players[self.my_ip].surface.fill((255, 0, 0))
 
         # boolean to know if the program needs to send data
         self.send = False
-        self.my_port = sys.argv[1]
-        self.my_ip = str("127.0.0.1:" + self.my_port)
-        self.client_port = set()
 
         if len(sys.argv) == 3:  # you try to connect to someone
             self.client_port.add(sys.argv[2])
-            msg = str("first 127.0.0.1:" + self.my_port)
+            msg = str("first " + str(tmp_ip) + ":" + self.my_port)
             self.client(msg)
             self.players[sys.argv[2]] = Player()
 
         self.serv = subprocess.Popen(
-            ["./tcpserver", self.my_port],
+            ["./tcpserver", self.my_port, str(tmp_ip)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )

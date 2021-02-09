@@ -18,9 +18,6 @@ void stop(char *msg)
 
 int main(int argc, char *argv[])
 {
-
-    char buffer[BUFSIZ];
-    int n, i = 0;
     int sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
         stop("socket()");

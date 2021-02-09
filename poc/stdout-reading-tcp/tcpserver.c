@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 {
 
     char buffer[BUFSIZE + 1];
-    int n, i;
+    int n;
     int newsockfd;
     int sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
                 stop("recv()");
             buffer[n] = '\0';
             write(STDOUT_FILENO, buffer, strlen(buffer));
-        } while (n = recv(newsockfd, buffer, BUFSIZE, 0));
+        } while ((n = recv(newsockfd, buffer, BUFSIZE, 0)));
     }
     if ((close(newsockfd)))
         stop("close");
