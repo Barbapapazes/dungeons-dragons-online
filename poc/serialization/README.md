@@ -64,7 +64,7 @@ Je ne vais pas trop détailler parce que ce sont juste un client TCP & un serveu
 
 ## __Lancer le POC ?__
 
-* Compiler avec Makefile
+* Compiler avec le Makefile DU DOSSIER
 * Lancer l'exécutable ```tcpserver```
 * Lancer l'éxecutable ```tcpclient```
 
