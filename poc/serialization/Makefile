@@ -13,5 +13,5 @@ tcpserver.o : tcpserver.c serialization.c
 	gcc -c tcpserver.c serialization.c 
 
 clean :
-	rm -rf *.o tcpserver tcpclientg
+	rm -rf *.o tcpserver tcpclient
 
