@@ -24,19 +24,19 @@ int main(int argc, char *argv[])
     int sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
         stop("socket()");
-    if (argc != 3)
+    if (argc != 4)
         stop("arg");
     struct sockaddr_in cli_addr;
     bzero(&cli_addr, sizeof(cli_addr));
 
     cli_addr.sin_family = AF_INET;
-    if (inet_aton("127.0.0.1", &cli_addr.sin_addr) == 0)
+    if (inet_aton(argv[1], &cli_addr.sin_addr) == 0)
         stop("inet_aton()");
-    tmp_port = atoi(argv[1]);
+    tmp_port = atoi(argv[2]);
     cli_addr.sin_port = htons(tmp_port);
     if (connect(sockfd, (struct sockaddr *)&cli_addr, sizeof(struct sockaddr)) == -1)
         stop("connect()");
-    sprintf(buffer, "%s\n", argv[2]);
+    sprintf(buffer, "%s\n", argv[3]);
     if (send(sockfd, buffer, strlen(buffer), 0) == -1)
         stop("send()");
     if (close(sockfd) == -1)
