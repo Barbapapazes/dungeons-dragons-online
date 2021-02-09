@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <strings.h>
 #include <arpa/inet.h>
 
 void stop(char *msg)
@@ -19,27 +18,24 @@ void stop(char *msg)
 int main(int argc, char *argv[])
 {
 
-    char buffer[BUFSIZ];
-    int tmp_port;
-    int sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    char buffer[BUFSIZ];                          //Buffer of 8192 char
+    int sockfd = socket(PF_INET, SOCK_STREAM, 0); //create a new tcp socket
     if (sockfd < 0)
         stop("socket()");
     if (argc != 4)
         stop("arg");
-    struct sockaddr_in cli_addr;
-    bzero(&cli_addr, sizeof(cli_addr));
-
-    cli_addr.sin_family = AF_INET;
-    if (inet_aton(argv[1], &cli_addr.sin_addr) == 0)
+    struct sockaddr_in serv_addr;
+    bzero(&serv_addr, sizeof(serv_addr));             //initialize the serv_addr
+    serv_addr.sin_family = AF_INET;                   //server address : ipv4
+    if (inet_aton(argv[1], &serv_addr.sin_addr) == 0) // puts the ipv4 address in binary and stores it in serv_addr.sin_addr
         stop("inet_aton()");
-    tmp_port = atoi(argv[2]);
-    cli_addr.sin_port = htons(tmp_port);
-    if (connect(sockfd, (struct sockaddr *)&cli_addr, sizeof(struct sockaddr)) == -1)
+    serv_addr.sin_port = htons(atoi(argv[2]));                                         // atoi : cast argv[2] in int htons() : puts the port in binary and saves it in serv_addr.sin_port
+    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(struct sockaddr)) == -1) // tries to connect to the server
         stop("connect()");
-    sprintf(buffer, "%s\n", argv[3]);
-    if (send(sockfd, buffer, strlen(buffer), 0) == -1)
+    sprintf(buffer, "%s\n", argv[3]);                  // add a \n at the end of the message
+    if (send(sockfd, buffer, strlen(buffer), 0) == -1) // send the message
         stop("send()");
-    if (close(sockfd) == -1)
+    if (close(sockfd) == -1) // close file descriptor
         stop("close");
 
     exit(EXIT_SUCCESS);
