@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "serialization.h": "c",
+        "tcp.h": "c"
+    }
+}
