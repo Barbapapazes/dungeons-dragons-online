@@ -18,13 +18,17 @@ class Game:
         self.clock = pygame.time.Clock()
         pygame.key.set_repeat(5, 5)
         self.players = {}
-        self.players["player1"] = Player()
-        self.players["player2"] = Player()
-        self.players["player1"].surface.fill((255, 0, 0))  # red
-        self.players["player2"].surface.fill((0, 255, 0))  # green
+        self.players["127.0.0.1:" + sys.argv[1]] = Player()
+        self.players["127.0.0.1:" + sys.argv[1]].surface.fill((255, 0, 0))
         self.send = False
         self.my_port = sys.argv[1]
-        self.client_port = sys.argv[2]
+        self.my_ip = str("127.0.0.1:" + self.my_port)
+        self.client_port = []
+        if len(sys.argv) == 3:
+            self.client_port = [sys.argv[2]]
+            msg = str("first 127.0.0.1:" + self.my_port)
+            self.client(msg)
+            self.players[sys.argv[2]] = Player()
         self.serv = subprocess.Popen(
             ["./tcpserver", self.my_port],
             stdout=subprocess.PIPE,
@@ -38,37 +42,38 @@ class Game:
         """handle user interaction"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                self.client(str("disconnect " + self.my_ip))
                 self.serv.terminate()  # kill the subprocess to avoid bind error
                 pygame.quit()
                 sys.exit(1)
             if (
                 pygame.key.get_pressed()[pygame.K_s]
-                and self.players["player1"].pos[1] + 50 < 768
+                and self.players[self.my_ip].pos[1] + 50 < 768
             ):
-                self.players["player1"].pos[1] += 1
+                self.players[self.my_ip].pos[1] += 1
                 self.send = True
             if (
                 pygame.key.get_pressed()[pygame.K_z]
-                and self.players["player1"].pos[1] > 0
+                and self.players[self.my_ip].pos[1] > 0
             ):
-                self.players["player1"].pos[1] -= 1
+                self.players[self.my_ip].pos[1] -= 1
                 self.send = True
             if (
                 pygame.key.get_pressed()[pygame.K_q]
-                and self.players["player1"].pos[0] > 0
+                and self.players[self.my_ip].pos[0] > 0
             ):
-                self.players["player1"].pos[0] -= 1
+                self.players[self.my_ip].pos[0] -= 1
                 self.send = True
             if (
                 pygame.key.get_pressed()[pygame.K_d]
-                and self.players["player1"].pos[0] + 50 < 1024
+                and self.players[self.my_ip].pos[0] + 50 < 1024
             ):
                 self.send = True
-                self.players["player1"].pos[0] += 1
+                self.players[self.my_ip].pos[0] += 1
 
     def run(self):
         """game loop that execute all necessary function"""
-        if self.send:
+        if self.send and self.client_port:
             self.client()
         self.tick = self.clock.tick(60) / 1000
         self.events()
@@ -89,18 +94,69 @@ class Game:
             self.screen.blit(player.surface, player.pos)
         pygame.display.flip()
 
-    def client(self):
+    def client(self, msg=None):
         """create a subprocess that will send the position to the local server with client_port"""
         self.send = False
-        subprocess.Popen(
-            [
+        if msg is None:
+            msg = (
+                "move " + self.my_ip + " " + str(self.players[self.my_ip].pos)
+            )
+        for ip in self.client_port:
+            ip = ip.split(":")
+
+            tmp = ["./tcpclient", *ip, msg]
+            subproc = subprocess.Popen(
+                tmp,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            subproc.wait()
+
+    def ip_send(self, target_ip):
+        for ip in self.client_port:
+            ip = ip.split(":")
+
+            tmp = ["./tcpclient", *ip, str("ip " + target_ip)]
+            subproc = subprocess.Popen(
+                tmp,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            subproc.wait()
+        tmp = target_ip.split(":")
+        for ip in self.client_port:
+            msg = ["./tcpclient", *tmp, str("ip " + ip)]
+            subproc = subprocess.Popen(
+                msg,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            subproc.wait()
+            msg = [
                 "./tcpclient",
-                self.client_port,
-                str(self.players["player1"].pos),
-            ],
+                *tmp,
+                str("move " + ip + " " + str(self.players[ip].pos)),
+            ]
+            subproc = subprocess.Popen(
+                msg,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            subproc.wait()
+
+        msg2 = [
+            "./tcpclient",
+            *tmp,
+            str(
+                "move " + self.my_ip + " " + str(self.players[self.my_ip].pos)
+            ),
+        ]
+        subproc = subprocess.Popen(
+            msg2,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+        subproc.wait()
 
     def server(self):
         """interprets the server's output"""
@@ -111,24 +167,40 @@ class Game:
             line = self.serv.stdout.readline()
             # transforms the binary flux into string
             line = line.decode("ascii")
-            # removes the '\n' from the string
             line = line[:-1]
-            # transform the string into list
-            list_pos = line.strip("][").split(", ")
-            # cast each element of the list to int
-            for cmpt in range(len(list_pos)):
-                list_pos[cmpt] = int(list_pos[cmpt])
-            # attribute the new position
-            self.players["player2"].pos = list_pos
+            if line.startswith("first"):
+                line = line.split(" ")
+                self.players[line[1]] = Player()
+                self.ip_send(line[1])
+                self.client_port.append(line[1])
+            elif line.startswith("ip"):
+                line = line.split(" ")
+                self.client_port.append(line[1])
+                if line[1] not in self.players:
+                    self.players[line[1]] = Player()
+            elif line.startswith("move"):
+                line = line.split(" ")
+                tmp = line[2] + " " + line[3]
+                list_pos = tmp.strip("][").split(", ")
+                for cmpt in range(len(list_pos)):
+                    list_pos[cmpt] = int(list_pos[cmpt])
+                self.players[line[1]].pos = list_pos
+            elif line.startswith("disconnect"):
+                line = line.split(" ")
+                del self.players[line[1]]
+                self.client_port.remove(line[1])
+
+            # removes the '\n' from the string
 
 
 class Player:
     def __init__(self):
         self.pos = [0, 0]
         self.surface = pygame.Surface((50, 50))
+        self.surface.fill((0, 255, 0))
 
 
-if len(sys.argv) != 3:
+if len(sys.argv) not in (2, 3):
     raise SystemError("argc")
 g = Game()
 while True:
