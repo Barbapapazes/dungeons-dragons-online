@@ -51,7 +51,7 @@ class Game:
 
         if len(sys.argv) == 3:  # you try to connect to someone
             # sys.argv[2] is ip:port
-            self.client_port.add(sys.argv[2])
+            self.client_ip_port.add(sys.argv[2])
             # split the ip:port to obtains ip and port
             tmp = sys.argv[2].split(":")
             # initialize a connection to ip contained in sys.argv[2]
@@ -102,7 +102,7 @@ class Game:
     def run(self):
         """game loop that execute all necessary function"""
         if (
-            self.send and self.client_port
+            self.send and self.client_ip_port
         ):  # if there is data to send and someone that can receive data
             self.client()
         self.clock.tick(10000)
@@ -118,7 +118,7 @@ class Game:
         pygame.display.flip()
 
     def client(self, msg=None):
-        """create a subprocess that will send the position to the local server with client_port"""
+        """create a subprocess that will send the position to the local server with client_ip_port"""
         self.send = False
 
         if msg is None:
@@ -132,7 +132,7 @@ class Game:
             )
         msg = str.encode(msg)
 
-        for ip in self.client_port:
+        for ip in self.client_ip_port:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             self.connections[ip].stdin.write(msg)
             self.connections[ip].stdin.flush()
@@ -143,15 +143,15 @@ class Game:
         Args:
             target_ip (str): string that contains the ip:port of the new connection
         """
-        for ip in self.client_port:
+        for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str("ip " + target_ip + "\n")
             msg = str.encode(msg)
             self.connections[ip].stdin.write(msg)
             self.connections[ip].stdin.flush()
 
-        for ip in self.client_port:
-            # this loop sends to the new user all the ip contained in self.client_port and all the relative position of the players
+        for ip in self.client_ip_port:
+            # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
             msg = str("ip " + ip + "\n")
             msg = str.encode(msg)
@@ -203,13 +203,13 @@ class Game:
                     stderr=subprocess.PIPE,
                 )
                 self.first_connection(line[1])
-                # add the new ip to the client_port set
-                self.client_port.add(line[1])
+                # add the new ip to the client_ip_port set
+                self.client_ip_port.add(line[1])
 
             # if an ip is sent, add it to the set
             elif line.startswith("ip"):
                 line = line.split(" ")
-                self.client_port.add(line[1])
+                self.client_ip_port.add(line[1])
                 if line[1] not in self.players:
                     self.players[line[1]] = Player()
                 tmp = line[1].split(":")
@@ -242,7 +242,7 @@ class Game:
                 # delete the player so it is not blit anymore
                 del self.players[line[1]]
                 # delete his ip
-                self.client_port.remove(line[1])
+                self.client_ip_port.remove(line[1])
                 pid = self.connections[line[1]].pid
                 os.kill(pid, signal.SIGINT)
                 del self.connections[line[1]]
