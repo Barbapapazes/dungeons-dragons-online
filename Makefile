@@ -7,7 +7,7 @@ POC_NAMES = subprocess-popen/sub \
 						stdout-reading-tcp/tcpserver stdout-reading-tcp/tcpclient \
 						pygame-tcp/tcpclient pygame-tcp/tcpserver \
 						pygame-tcp-multi/tcpclient pygame-tcp-multi/tcpserver \
-						pygame-tcp-ip/tcpclient pygame-tcp-ip/tcpserver
+						pygame-udp-multi/udpclient pygame-udp-multi/udpserver
 POC_SRCS = $(addprefix $(POC_DIR),$(POC_NAMES))
 
 .PHONY: all init receive send clean poc
