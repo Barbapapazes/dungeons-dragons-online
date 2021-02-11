@@ -105,7 +105,7 @@ class Game:
             self.send and self.client_ip_port
         ):  # if there is data to send and someone that can receive data
             self.client()
-        self.clock.tick(10000)
+        self.clock.tick(120)
         self.events()
         self.draw()
         self.server()
@@ -113,6 +113,7 @@ class Game:
     def draw(self):
         """displays the players on the screen relative to their position"""
         self.screen.fill((0, 0, 0))
+        pygame.display.set_caption("FPS: " + str(int(self.clock.get_fps())))
         for player in self.players.values():
             self.screen.blit(player.surface, player.pos)
         pygame.display.flip()

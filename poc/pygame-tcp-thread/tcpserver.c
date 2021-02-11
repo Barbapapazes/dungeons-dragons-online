@@ -5,6 +5,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -22,8 +23,9 @@ void stop(char *msg)
 int main(int argc, char *argv[])
 {
 
-    char buffer[BUFSIZ];                          //Buffer of 8192 char
-    int n, childreturn, childpid;                 //counter of char received, return value of the child, pid used for fork
+    char buffer[BUFSIZ]; //Buffer of 8192 char
+    int n, childreturn;  //counter of char received, return value of the child, pid used for fork
+    pid_t childpid, pid;
     int newsockfd;                                //file descriptor that will contains the client socket
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //server socket where client connects.
     if (sockfd < 0)
@@ -41,18 +43,24 @@ int main(int argc, char *argv[])
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int));         // avoid the bind error by allowing the reuse of port for socket
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) // associate to sockfd serv_addr
         stop("bind()");
-    if (listen(sockfd, 20000) == -1) //allows to queue up to 20000 connexions to the server
+    if (listen(sockfd, 2000) == -1) //allows to queue up to 20000 connexions to the server
         stop("listen()");
     int size = sizeof(serv_addr);
+    if ((newsockfd = accept(sockfd, (struct sockaddr *)&serv_addr, (socklen_t *)&size)) == -1) //accept a new connection
+        stop("accept()");
+    pid = getpid();
+    setpgid(pid, 0); //set a group id to the process id and so all the child because the fork occurs after
     while (1)
     {
-        if ((newsockfd = accept(sockfd, (struct sockaddr *)&serv_addr, (socklen_t *)&size)) == -1) //accept a new connection
-            stop("accept()");
+        //the father waits that a new connection occurs to fork again
+        // the child will stay alive while a connection is maintained and write on stdout.
+        // if a child receives the "!server_end" message he will kill all his brothers and parent
         if ((childpid = fork()) == 0) //fork the program so we can handle multiple tcp connection
         {
             close(sockfd); //if we are in child the sockfd is no more needed so we close it
 
-            while ((n = recv(newsockfd, buffer, BUFSIZ, 0)) > 0) //Wait to receive a message
+            n = recv(newsockfd, buffer, BUFSIZ, 0);
+            do
             {
                 if ((n == -1))
                     stop("recv()");
@@ -60,26 +68,24 @@ int main(int argc, char *argv[])
                 {
                     if ((close(newsockfd))) //close the attributed socket to avoid bind error
                         stop("close");
+                    killpg(getpgid(pid), SIGINT); //kill all child and father
                     return 1;
                 }
                 buffer[n] = '\0';
-                write(STDOUT_FILENO, buffer, strlen(buffer)); //write the message in STDOUT_FILENO
-            }
+                write(STDOUT_FILENO, buffer, strlen(buffer));
+            } while ((n = recv(newsockfd, buffer, BUFSIZ, 0)) > 0); //write the message in STDOUT_FILENO
+
             if ((close(newsockfd))) //close the attributed socket to avoid bind error
                 stop("close");
             return 0; // if the message has not been fully received reiterate the process
         }
         else
         {
-            wait(&childreturn); //wait for child and put it's return value in childreturn then test if return value is equal to 1
-            if (childreturn == RETURN_CHILD)
-            {
-                break;
-            }
+            if ((newsockfd = accept(sockfd, (struct sockaddr *)&serv_addr, (socklen_t *)&size)) == -1) //accept a new connection
+                stop("accept()");
         }
     }
-    if ((close(newsockfd))) //close the attributed socket to avoid bind error
-        stop("close");
-
+    close(newsockfd);
+    close(sockfd);
     exit(EXIT_SUCCESS);
 }
