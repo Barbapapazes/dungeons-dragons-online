@@ -63,6 +63,30 @@ class Game:
 
     def events(self):
         """handle user interaction"""
+        if (
+            pygame.key.get_pressed()[pygame.K_s]
+            and self.players[self.my_ip].pos[1] + 50 < 768
+        ):
+            self.players[self.my_ip].pos[1] += 1
+            self.send = True
+        if (
+            pygame.key.get_pressed()[pygame.K_z]
+            and self.players[self.my_ip].pos[1] > 0
+        ):
+            self.players[self.my_ip].pos[1] -= 1
+            self.send = True
+        if (
+            pygame.key.get_pressed()[pygame.K_q]
+            and self.players[self.my_ip].pos[0] > 0
+        ):
+            self.players[self.my_ip].pos[0] -= 1
+            self.send = True
+        if (
+            pygame.key.get_pressed()[pygame.K_d]
+            and self.players[self.my_ip].pos[0] + 50 < 1024
+        ):
+            self.send = True
+            self.players[self.my_ip].pos[0] += 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 # inform other clients that the player has disconnected
@@ -70,30 +94,6 @@ class Game:
                 self.serv.terminate()  # kill the subprocess to avoid bind error
                 pygame.quit()
                 sys.exit(1)
-            if (
-                pygame.key.get_pressed()[pygame.K_s]
-                and self.players[self.my_ip].pos[1] + 50 < 768
-            ):
-                self.players[self.my_ip].pos[1] += 1
-                self.send = True
-            if (
-                pygame.key.get_pressed()[pygame.K_z]
-                and self.players[self.my_ip].pos[1] > 0
-            ):
-                self.players[self.my_ip].pos[1] -= 1
-                self.send = True
-            if (
-                pygame.key.get_pressed()[pygame.K_q]
-                and self.players[self.my_ip].pos[0] > 0
-            ):
-                self.players[self.my_ip].pos[0] -= 1
-                self.send = True
-            if (
-                pygame.key.get_pressed()[pygame.K_d]
-                and self.players[self.my_ip].pos[0] + 50 < 1024
-            ):
-                self.send = True
-                self.players[self.my_ip].pos[0] += 1
 
     def run(self):
         """game loop that execute all necessary function"""
@@ -101,7 +101,7 @@ class Game:
             self.send and self.client_port
         ):  # if there is data to send and someone that can receive data
             self.client()
-        self.tick = self.clock.tick(60) / 1000
+        self.tick = self.clock.tick(120) / 1000
         self.events()
         self.draw()
         self.server()
@@ -116,6 +116,7 @@ class Game:
     def draw(self):
         """displays the players on the screen relative to their position"""
         self.screen.fill((0, 0, 0))
+        pygame.display.set_caption("FPS: " + str(int(self.clock.get_fps())))
         for player in self.players.values():
             self.screen.blit(player.surface, player.pos)
         pygame.display.flip()
