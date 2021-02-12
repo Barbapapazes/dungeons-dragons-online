@@ -21,6 +21,7 @@ class Game:
         pygame.init()
         self.screen = pygame.display.set_mode((1024, 768))
         self.clock = pygame.time.Clock()
+        self.tick_cpt = 0
         pygame.key.set_repeat(5, 5)
 
         # sys.argv[1] refered to the server port of the program
@@ -102,10 +103,11 @@ class Game:
     def run(self):
         """game loop that execute all necessary function"""
         if (
-            self.send and self.client_ip_port
+            self.send and self.client_ip_port and self.tick_cpt % 6 == 0
         ):  # if there is data to send and someone that can receive data
             self.client()
-        self.clock.tick(120)
+        self.clock.tick(60)
+        self.tick_cpt += 1
         self.events()
         self.draw()
         self.server()
