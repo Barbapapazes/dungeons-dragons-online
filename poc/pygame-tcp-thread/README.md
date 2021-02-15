@@ -49,3 +49,4 @@
 
 - Le serveur est lancé dans un autre terminal et peut gérer une file de 20000 connexions en cas de forte affluence (modifiable). Le serveur est dans une boucle infini et ne s'arrête jamais.
 - Le client tcp se connecte au serveur à l'adresse passé par `argv[1]`, sur le port passé par `argv[2]`,si un serveur existe sinon il se termine. Une fois connecté il envoie le message passé par `argv[3]` plus un retour à la ligne pour signifier la fin du paquet et se déconnecte.
+- le serveur et le client possède un gestionnaire de signaux : le serveur tue tous ses enfants puis lui même si on lui envoie `SIGURS1`; le client se termine tout simplement avec un `exit(EXIT_SUCCESS)`

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -14,9 +15,18 @@ void stop(char *msg)
     perror(msg);
     exit(EXIT_FAILURE);
 }
+/**
+ * @brief end the process
+ * 
+ */
+void end(int signum)
+{
+    exit(EXIT_SUCCESS);
+}
 
 int main(int argc, char *argv[])
 {
+    signal(SIGUSR1, &end); // catch SIGUSR1 and execute launch function
 
     char *stdin_read;
     size_t size;
@@ -37,8 +47,6 @@ int main(int argc, char *argv[])
     {
         if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
             stop("getline()");
-        if (strcmp(stdin_read, "!end\n") == 0) //if !end\n is wrote in stdin exit the while loop
-            break;
 
         if (send(sockfd, stdin_read, strlen(stdin_read), 0) == -1) // send the message
             stop("send()");

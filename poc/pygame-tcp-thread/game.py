@@ -205,6 +205,7 @@ class Game:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
+
                 self.first_connection(line[1])
                 # add the new ip to the client_ip_port set
                 self.client_ip_port.add(line[1])
@@ -254,29 +255,13 @@ class Game:
         """handle the disconnection of the client and end all the subprocess"""
         # sends to all other players that the client has disconnected
         self.client(str("disconnect " + self.my_ip + "\n"))
-
-        # encode the two messages that will end the tcpclient process and the tcpserver process
-        end = "!end\n"
-        end = str.encode(end)
-        s_end = "!server_end\n"
-        s_end = str.encode(s_end)
-
-        # split the ip port of the user
-        tmp_ip = self.my_ip.split(":")
-        # create a temporay process that will only end the tcpserver and end himself after
-        temp_proc = subprocess.Popen(
-            ["./tcpclient", tmp_ip[0], tmp_ip[1]],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        temp_proc.stdin.write(s_end)
-        temp_proc.stdin.flush()
-        temp_proc.stdin.write(end)
+        # ensure that the disconnect message has been sent
+        time.sleep(0.5)
+        # end the serv process (look for tcpserver to get more details)
+        os.kill(self.serv.pid, signal.SIGUSR1)
         for ip in self.connections:
             # end all the tcpclient process that are in connections dictionnary
-            self.connections[ip].stdin.write(end)
-            self.connections[ip].stdin.flush()
+            os.kill(self.connections[ip].pid, signal.SIGUSR1)
 
     def movement(self):
         """handle the movement of the player"""
@@ -324,8 +309,13 @@ def enqueue_output(out, queue_line):
         queue_line.put(line)
 
 
+def sigint_handler(sig, frame):
+    pass
+
+
 if len(sys.argv) not in (2, 3):
     raise SystemError("argc")
+signal.signal(signal.SIGINT, sigint_handler)
 g = Game()
 while True:
     g.run()

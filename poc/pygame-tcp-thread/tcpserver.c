@@ -19,13 +19,24 @@ void stop(char *msg)
     perror(msg);
     exit(EXIT_FAILURE);
 }
+/**
+ * @brief end the program and avoid orphans children
+ * 
+ */
+void end(int signum)
+{
+    pid_t pid = getpid();         //get pid of the current process
+    killpg(getpgid(pid), SIGINT); //kill all process that have the same group id as the current process (here kill all child and the current process)
+    exit(EXIT_SUCCESS);           //end the process if SIGINT hasn't already done it
+}
 
 int main(int argc, char *argv[])
 {
+    signal(SIGUSR1, &end); // if SIGUSR1 is received execute end function
 
-    char buffer[BUFSIZ]; //Buffer of 8192 char
-    int n, childreturn;  //counter of char received, return value of the child, pid used for fork
-    pid_t childpid, pid;
+    char buffer[BUFSIZ];                          //Buffer of 8192 char
+    int n;                                        //counter of char received
+    pid_t childpid, pid;                          //pid used for fork, pid used for group id
     int newsockfd;                                //file descriptor that will contains the client socket
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //server socket where client connects.
     if (sockfd < 0)
@@ -54,7 +65,6 @@ int main(int argc, char *argv[])
     {
         //the father waits that a new connection occurs to fork again
         // the child will stay alive while a connection is maintained and write on stdout.
-        // if a child receives the "!server_end" message he will kill all his brothers and parent
         if ((childpid = fork()) == 0) //fork the program so we can handle multiple tcp connection
         {
             close(sockfd); //if we are in child the sockfd is no more needed so we close it
@@ -64,13 +74,6 @@ int main(int argc, char *argv[])
             {
                 if ((n == -1))
                     stop("recv()");
-                if (strcmp(buffer, "!server_end\n") == 0) //if the message received is the end close the socket and return a special value that can only be return in this case
-                {
-                    if ((close(newsockfd))) //close the attributed socket to avoid bind error
-                        stop("close");
-                    killpg(getpgid(pid), SIGINT); //kill all child and father
-                    return 1;
-                }
                 buffer[n] = '\0';
                 write(STDOUT_FILENO, buffer, strlen(buffer));
             } while ((n = recv(newsockfd, buffer, BUFSIZ, 0)) > 0); //write the message in STDOUT_FILENO
