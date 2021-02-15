@@ -13,9 +13,9 @@
 ### Lancement des programmes :
 
 - On peut lancer le programme python de deux façons :
-  - Soit on veut créer une nouvelle partie auquel cas la syntaxe de lancement du programme est : `python3 game.py <server_port>`
-  - Soit on veut rejoindre une partie existante auquel cas la syntaxe de lancement du programme est : `python3 game.py <server_port> <ip>:<port>`
-    <br>_exemple : python3 game.py 8000 <br> dans un autre terminal : python3 game.py 8001 192.168.11.132:8000_
+  - Soit on veut créer une nouvelle partie auquel cas la syntaxe de lancement du programme est : `python3 game.py`
+  - Soit on veut rejoindre une partie existante auquel cas la syntaxe de lancement du programme est : `python3 game.py <ip>:<port>`
+    <br>_exemple : python3 game.py <br> dans un autre terminal : python3 game.py 192.168.11.132:8000_
 
 ### Programme Python :
 

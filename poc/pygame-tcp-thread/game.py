@@ -32,6 +32,7 @@ class Game:
         s.connect(("8.8.8.8", 80))  # ping 8.8.8.8
         tmp_ip = s.getsockname()[0]
 
+        # check if default port is already used
         a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         location = (tmp_ip, self.my_port)
         result_of_check = a_socket.connect_ex(location)
