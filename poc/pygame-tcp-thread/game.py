@@ -25,12 +25,21 @@ class Game:
         pygame.key.set_repeat(5, 5)
 
         # sys.argv[1] refered to the server port of the program
-        self.my_port = sys.argv[1]
+        self.my_port = 8000
 
         # send a request to 8.8.8.8 to know the ip adress from the computer and stores it in tmp_ip to attribute it after.
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))  # ping 8.8.8.8
         tmp_ip = s.getsockname()[0]
+
+        a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        location = (tmp_ip, self.my_port)
+        result_of_check = a_socket.connect_ex(location)
+        while result_of_check == 0:
+            self.my_port += 1
+            location = (tmp_ip, self.my_port)
+            result_of_check = a_socket.connect_ex(location)
+        self.my_port = str(self.my_port)
 
         # ip stored in self.my_ip (exemple : 127.0.0.1:8000)
         self.my_ip = str(str(tmp_ip) + ":" + self.my_port)
@@ -50,13 +59,13 @@ class Game:
         # boolean to know if the program needs to send data
         self.send = False
 
-        if len(sys.argv) == 3:  # you try to connect to someone
+        if len(sys.argv) == 2:  # you try to connect to someone
             # sys.argv[2] is ip:port
-            self.client_ip_port.add(sys.argv[2])
+            self.client_ip_port.add(sys.argv[1])
             # split the ip:port to obtains ip and port
-            tmp = sys.argv[2].split(":")
+            tmp = sys.argv[1].split(":")
             # initialize a connection to ip contained in sys.argv[2]
-            self.connections[sys.argv[2]] = subprocess.Popen(
+            self.connections[sys.argv[1]] = subprocess.Popen(
                 ["./tcpclient", tmp[0], tmp[1]],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -66,10 +75,10 @@ class Game:
             msg = str("first " + str(tmp_ip) + ":" + self.my_port + "\n")
             msg = str.encode(msg)
             # write the encoded message on stdin then flush it to avoid conflict
-            self.connections[sys.argv[2]].stdin.write(msg)
-            self.connections[sys.argv[2]].stdin.flush()
+            self.connections[sys.argv[1]].stdin.write(msg)
+            self.connections[sys.argv[1]].stdin.flush()
             # create a player associated to the client that you are connecting to
-            self.players[sys.argv[2]] = Player()
+            self.players[sys.argv[1]] = Player()
 
         # create a subprocess that will execute the server. We will communicate with it by reading stdout
         self.serv = subprocess.Popen(
@@ -313,7 +322,7 @@ def sigint_handler(sig, frame):
     pass
 
 
-if len(sys.argv) not in (2, 3):
+if len(sys.argv) not in (1, 2):
     raise SystemError("argc")
 signal.signal(signal.SIGINT, sigint_handler)
 g = Game()
