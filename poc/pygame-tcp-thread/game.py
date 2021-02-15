@@ -319,13 +319,9 @@ def enqueue_output(out, queue_line):
         queue_line.put(line)
 
 
-def sigint_handler(sig, frame):
-    pass
-
-
 if len(sys.argv) not in (1, 2):
     raise SystemError("argc")
-signal.signal(signal.SIGINT, sigint_handler)
+signal.signal(signal.SIGINT, signal.SIG_IGN)
 g = Game()
 while True:
     g.run()
