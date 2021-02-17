@@ -14,7 +14,8 @@ L'ensemble des exécutables seront mis dans le dossier `build`.
 
 #### POC
 
-Afin de compiler aisément l'ensemble des excécutables, il est possible d'utiliser `make poc`. Attention, il est important de `make clean` avant de add pour s'assurer que les exécutables ne soient pas pris en compte.
+Afin de compiler aisément l'ensemble des exécutables, il est possible d'utiliser `make poc` ou `make src`. Attention, il est important de `make clean` avant de add pour s'assurer que les exécutables ne soient pas pris en compte.
+
 
 Aussi, lors de la création d'un nouveau poc, il suffit s'implement d'ajouter le chemin de l'exécutable à faire dans la variable `POC_NAMES`.
 

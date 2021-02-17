@@ -1,6 +1,8 @@
 """This file contains the implementation of simple menus"""
 from .interface import Button, TextEntry
 import pygame as pg
+import time
+import subprocess
 
 
 class Menu:
@@ -138,7 +140,7 @@ class CharacterMenu(Menu):
             self.displaying = False
 
     def display_menu(self):
-        """[summary] Displays the menu on our screen"""
+        """ Displays the menu on our screen"""
         self.displaying = True
         while self.displaying:
             # Checking for events
@@ -215,13 +217,39 @@ class JoinMenu(Menu):
         """
         self.ip_input.handle_events(event)
         if self.return_button.is_clicked(event):
-            self.game.current_menu = self.game.main_menu
+            self.game.current_menu = self.game.character_menu
             self.displaying = False
         if self.join_button.is_clicked(event):
-            print("join")
+            client_ip = self.ip_input.get_text()
+            tmp = client_ip.split(":")
+            if len(tmp) != 2:
+                return
+            # initialize a connection to ip contained in sys.argv[2]
+            tmp_proc = subprocess.Popen(
+                ["./src/tcpclient", tmp[0], tmp[1]],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            time.sleep(0.11)
+            poll = tmp_proc.poll()
+            if poll is not None:
+                return
             self.displaying = False
             self.game.menu_running = False
             self.game.playing = True
+            self.game.client_ip_port.add(client_ip)
+            # split the ip:port to obtains ip and port
+            tmp = client_ip.split(":")
+            # initialize a connection to ip contained in sys.argv[2]
+            self.game.connections[client_ip] = tmp_proc
+            tmp = self.game.my_ip.split(":")
+            # encode in binary a message that contains : first + client ip:port
+            msg = str("first " + str(tmp[0]) + ":" + tmp[1] + "\n")
+            msg = str.encode(msg)
+            # write the encoded message on stdin then flush it to avoid conflict
+            self.game.connections[client_ip].stdin.write(msg)
+            self.game.connections[client_ip].stdin.flush()
 
     def display_menu(self):
         """[summary] Displays the menu on our screen"""
