@@ -1,5 +1,5 @@
 """This file contains the implementation of simple menus"""
-from .interface import Button
+from .interface import Button, TextEntry
 import pygame as pg
 
 
@@ -95,6 +95,15 @@ class CharacterMenu(Menu):
             "#000000",
             40,
         )
+        self.join_button = Button(
+            self.game,
+            self.game.resolution[0] // 2,
+            self.game.resolution[1] // 2 + 150,
+            "Join",
+            "src/fonts/enchanted_land.otf",
+            "#000000",
+            40,
+        )
         self.return_button = Button(
             self.game,
             self.game.resolution[0] // 3,
@@ -105,7 +114,11 @@ class CharacterMenu(Menu):
             40,
             "small",
         )
-        self.button_list = [self.play_button, self.return_button]
+        self.button_list = [
+            getattr(self, button)
+            for button in dir(self)
+            if isinstance(getattr(self, button), Button)
+        ]
 
     def check_events(self, event):
         """[summary] This method deals with the user inputs
@@ -116,6 +129,9 @@ class CharacterMenu(Menu):
         if self.play_button.is_clicked(event):
             self.game.menu_running = False
             self.game.playing = True
+            self.displaying = False
+        if self.join_button.is_clicked(event):
+            self.game.current_menu = self.game.join_menu
             self.displaying = False
         if self.return_button.is_clicked(event):
             self.game.current_menu = self.game.main_menu
@@ -132,6 +148,94 @@ class CharacterMenu(Menu):
             for button in self.button_list:
                 button.display_button()
                 button.color_on_mouse("#FFFFFF")
+
+            self.display_to_game()
+            self.clock.tick(30)
+
+
+class JoinMenu(Menu):
+    """Menu to join a game"""
+
+    def __init__(self, game):
+        Menu.__init__(self, game)
+
+        self.menu_background = pg.image.load(
+            "src/assets/menus/background.png"
+        ).convert_alpha()
+
+        self.ip_input = TextEntry(
+            self.game,
+            self.game.resolution[0] // 2,
+            self.game.resolution[1] // 2,
+            200,
+            50,
+            "src/fonts/enchanted_land.otf",
+            32,
+            20,
+        )
+
+        self.return_button = Button(
+            self.game,
+            self.game.resolution[0] // 3,
+            self.game.resolution[1] // 2,
+            "<",
+            "src/fonts/enchanted_land.otf",
+            "#000000",
+            40,
+            "small",
+        )
+
+        self.join_button = Button(
+            self.game,
+            self.game.resolution[0] // 2,
+            self.game.resolution[1] // 2 + 150,
+            "Join",
+            "src/fonts/enchanted_land.otf",
+            "#000000",
+            40,
+        )
+
+        self.button_list = [
+            getattr(self, button)
+            for button in dir(self)
+            if isinstance(getattr(self, button), Button)
+        ]
+
+        self.textentry_list = [
+            getattr(self, textentry)
+            for textentry in dir(self)
+            if isinstance(getattr(self, textentry), TextEntry)
+        ]
+
+    def check_events(self, event):
+        """[summary] This method deals with the user inputs
+            on the different buttons of the menu
+        Args:
+            event ([type]): [description] a pygame event
+        """
+        self.ip_input.handle_events(event)
+        if self.return_button.is_clicked(event):
+            self.game.current_menu = self.game.main_menu
+            self.displaying = False
+        if self.join_button.is_clicked(event):
+            print("join")
+            self.displaying = False
+            self.game.menu_running = False
+            self.game.playing = True
+
+    def display_menu(self):
+        """[summary] Displays the menu on our screen"""
+        self.displaying = True
+        while self.displaying:
+            # Checking for events
+            self.game.check_events()
+            self.game.display.blit(self.menu_background, (0, 0))
+
+            for button in self.button_list:
+                button.display_button()
+                button.color_on_mouse("#FFFFFF")
+            for textentry in self.textentry_list:
+                textentry.display_box()
 
             self.display_to_game()
             self.clock.tick(30)

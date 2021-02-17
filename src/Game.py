@@ -1,7 +1,7 @@
 """This file contains the Game class which is the central element of
 our game"""
 import pygame as pg
-from .Menu import CharacterMenu, MainMenu
+from .Menu import CharacterMenu, MainMenu, JoinMenu
 
 
 class Game(object):
@@ -29,6 +29,7 @@ class Game(object):
         self.character_menu = CharacterMenu(self)
         # The current menu is the menu we always display
         self.current_menu = self.main_menu
+        self.join_menu = JoinMenu(self)
 
         self.clock = pg.time.Clock()
 
