@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     char *stdin_read = NULL;
     size_t size;
     int res, opt;
-    char *buffer[80];
+    char buffer[80];
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //create a new tcp socket
     struct timeval timeout;
     struct timeval ping_in, ping_out;
@@ -116,8 +116,9 @@ int main(int argc, char *argv[])
             stop("send()");
         if (recv(sockfd, buffer, 12, 0) == -1) //wait for a server response
             stop("send()");
-        gettimeofday(&ping_out, NULL);                                                                                // get time in s and µs when the packet has been received
-        printf("ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec); //print the difference
+        gettimeofday(&ping_out, NULL);                                                                                         // get time in s and µs when the packet has been received
+        sprintf(buffer, "ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec); //print the difference
+        write(STDOUT_FILENO, buffer, strlen(buffer));
     }
 
     if (close(sockfd) == -1) // close file descriptor

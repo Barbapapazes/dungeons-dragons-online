@@ -4,17 +4,26 @@ import queue
 import signal
 import time
 import socket
+import threading
 
 
 def server(game):
     """interprets the server's output"""
+    for key in game.ping:
+        try:
+            line = game.ping[key][1].get(timeout=0.001)
+        except queue.Empty:
+            pass
+        else:
+            line = line.decode("ascii")
+            print(line)
+
     try:
         # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
-        line = game.q.get(timeout=0.005)
+        line = game.q.get(timeout=0.001)
     except queue.Empty:
         return
     else:
-        print(line)
         # if no exception is raised then line contains something
         line = line.decode("ascii")  # binary flux that we need to decode
         line = line[:-1]  # delete the final `\n`
@@ -25,15 +34,7 @@ def server(game):
             line = line.split(" ")
             # self.players[line[1]] = Player()
             # split the ip and the port
-            tmp = line[1].split(":")
-            # add a new connection to the connections dictionnary
-            game.connections[line[1]] = subprocess.Popen(
-                ["./src/tcpclient", tmp[0], tmp[1]],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-
+            add_connection(game, line)
             first_connection(game, line[1])
             # add the new ip to the client_ip_port set
             game.client_ip_port.add(line[1])
@@ -41,16 +42,7 @@ def server(game):
         # if an ip is sent, add it to the set
         elif line.startswith("ip"):
             line = line.split(" ")
-            game.client_ip_port.add(line[1])
-            # if line[1] not in self.players:
-            #     self.players[line[1]] = Player()
-            tmp = line[1].split(":")
-            game.connections[line[1]] = subprocess.Popen(
-                ["./src/tcpclient", tmp[0], tmp[1]],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            add_connection(game, line)
 
         # if a movement is sent
         elif line.startswith("move"):
@@ -78,6 +70,32 @@ def server(game):
             pid = game.connections[line[1]].pid
             os.kill(pid, signal.SIGINT)
             del game.connections[line[1]]
+            del game.ping[line[1]]
+
+
+def add_connection(game, line):
+    game.client_ip_port.add(line[1])
+    # if line[1] not in self.players:
+    #     self.players[line[1]] = Player()
+    tmp = line[1].split(":")
+    game.connections[line[1]] = subprocess.Popen(
+        ["./src/tcpclient", tmp[0], tmp[1]],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
+    tmp_queue = queue.Queue()
+    tmp_thread = threading.Thread(
+        target=enqueue_output,
+        args=(game.connections[line[1]].stdout, tmp_queue),
+    )
+
+    # the thread will die with the end of the main procus
+    tmp_thread.daemon = True
+    # thread is launched
+    tmp_thread.start()
+    game.ping[line[1]] = (tmp_thread, tmp_queue)
 
 
 def get_ip():

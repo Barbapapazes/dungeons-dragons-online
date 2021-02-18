@@ -10,7 +10,7 @@ import time
 import queue
 import socket
 from .Menu import CharacterMenu, MainMenu, JoinMenu
-from .Network import enqueue_output, server, disconnect, get_ip
+from .Network import enqueue_output, server, disconnect, get_ip, client
 
 
 class Game(object):
@@ -90,6 +90,8 @@ class Game(object):
         self.t.daemon = True
         # thread is launched
         self.t.start()
+        # dic that will contains multiple thread to read tcpclient
+        self.ping = {}
 
     def check_events(self):
         "Checks for events in our game"
@@ -98,6 +100,7 @@ class Game(object):
                 self.current_menu.displaying = False
                 self.running, self.playing = False, False
                 disconnect(self)
+                quit(self)
             if self.menu_running:
                 self.current_menu.check_events(event)
             if self.playing:
@@ -128,3 +131,4 @@ class Game(object):
             self.check_events()
             self.clock.tick(30)
             server(self)
+            client(self, "test\n")

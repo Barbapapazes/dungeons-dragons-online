@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 
-#define RETURN_CHILD 256
+#define BUFFSIZE 1500
 
 void stop(char *msg)
 {
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 {
     signal(SIGUSR1, &end); // if SIGUSR1 is received execute end function
 
-    char buffer[BUFSIZ];                          //Buffer of 8192 char
+    char buffer[BUFFSIZE];                        //Buffer of 8192 char
     int n;                                        //counter of char received
     pid_t childpid, pid;                          //pid used for fork, pid used for group id
     int newsockfd;                                //file descriptor that will contains the client socket
@@ -69,14 +69,16 @@ int main(int argc, char *argv[])
         {
             close(sockfd); //if we are in child the sockfd is no more needed so we close it
 
-            n = recv(newsockfd, buffer, BUFSIZ, 0);
+            n = recv(newsockfd, buffer, BUFFSIZE, 0);
             do
             {
                 if ((n == -1))
                     stop("recv()");
                 buffer[n] = '\0';
                 write(STDOUT_FILENO, buffer, strlen(buffer));
-            } while ((n = recv(newsockfd, buffer, BUFSIZ, 0)) > 0); //write the message in STDOUT_FILENO
+                if (n < BUFFSIZE) //if n < BUFFSIZE it means that we're at the end of the packet so we send an acknowledge message
+                    send(newsockfd, "acknowledge", 12, 0);
+            } while ((n = recv(newsockfd, buffer, BUFFSIZE, 0)) > 0); //write the message in STDOUT_FILENO
 
             if ((close(newsockfd))) //close the attributed socket to avoid bind error
                 stop("close");
