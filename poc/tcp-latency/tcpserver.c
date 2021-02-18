@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
                     stop("recv()");
                 buffer[n] = '\0';
                 write(STDOUT_FILENO, buffer, strlen(buffer));
-                if (n < BUFFSIZE)
-                    send(newsockfd, "acknowlegde", 12, 0);
+                if (n < BUFFSIZE) //if n < BUFFSIZE it means that we're at the end of the packet so we send an acknowledge message
+                    send(newsockfd, "acknowledge", 12, 0);
             } while ((n = recv(newsockfd, buffer, BUFFSIZE, 0)) > 0); //write the message in STDOUT_FILENO
 
             if ((close(newsockfd))) //close the attributed socket to avoid bind error

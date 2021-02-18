@@ -111,13 +111,13 @@ int main(int argc, char *argv[])
     {
         if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
             stop("getline()");
-        gettimeofday(&ping_in, NULL);
+        gettimeofday(&ping_in, NULL);                              // get time in s and µs when the packet has been sent
         if (send(sockfd, stdin_read, strlen(stdin_read), 0) == -1) // send the message
             stop("send()");
-        if (recv(sockfd, buffer, 12, 0) == -1)
+        if (recv(sockfd, buffer, 12, 0) == -1) //wait for a server response
             stop("send()");
-        gettimeofday(&ping_out, NULL);
-        printf("ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec);
+        gettimeofday(&ping_out, NULL);                                                                                // get time in s and µs when the packet has been received
+        printf("ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec); //print the difference
     }
 
     if (close(sockfd) == -1) // close file descriptor
