@@ -53,13 +53,14 @@ int main(int argc, char *argv[])
     if ((opt = fcntl(sockfd, F_GETFL, NULL)) < 0)
         stop("flag");
 
-    // set socket non-blocking
+    // set socket to NON-blocking mode
     if (fcntl(sockfd, F_SETFL, opt | O_NONBLOCK) < 0)
         stop("socket");
 
+    // try to connect
     if ((res = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(struct sockaddr))) < 0)
     {
-        if (errno == EINPROGRESS)
+        if (errno == EINPROGRESS) //  connection cannot be established immediatly
         {
             fd_set wait_set;
 
@@ -76,11 +77,11 @@ int main(int argc, char *argv[])
 
     // reset socket flags
     if (fcntl(sockfd, F_SETFL, opt) < 0)
-        stop("connect");
+        stop("fcntl");
 
     // if error occured in connect or select
     if (res < 0)
-        stop("connect");
+        stop("connect or select");
 
     // if timed out
     else if (res == 0)
@@ -88,6 +89,7 @@ int main(int argc, char *argv[])
         errno = ETIMEDOUT;
         stop("connect");
     }
+    // connection established
     else
     {
         socklen_t len = sizeof(opt);

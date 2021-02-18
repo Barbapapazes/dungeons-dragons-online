@@ -9,7 +9,7 @@ POC_NAMES = subprocess-popen/sub \
 						pygame-tcp-multi/tcpclient pygame-tcp-multi/tcpserver \
 						pygame-udp-multi/udpclient pygame-udp-multi/udpserver \
 						pygame-tcp-thread/tcpclient pygame-tcp-thread/tcpserver \
-						network-full-c/fork-read/main
+						network-full-c/fork-read/main tcp-latency/tcpclient tcp-latency/tcpserver
 POC_SRCS = $(addprefix $(POC_DIR),$(POC_NAMES))
 
 SRC_DIR = src/
