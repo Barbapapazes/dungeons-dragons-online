@@ -12,6 +12,10 @@ POC_NAMES = subprocess-popen/sub \
 						network-full-c/fork-read/main
 POC_SRCS = $(addprefix $(POC_DIR),$(POC_NAMES))
 
+SRC_DIR = src/
+SRC_NAMES = tcpclient tcpserver
+SRC_SRCS = $(addprefix $(SRC_DIR),$(SRC_NAMES))
+
 .PHONY: all init receive send clean poc
 
 all: init receive send
@@ -27,9 +31,15 @@ send: send/main.c
 
 clean:
 	@rm -f build/* $(POC_SRCS)
+	@rm -f build/* $(SRC_SRCS)
 
 poc: $(POC_SRCS)
 	@echo Create $(POC_SRCS)
+src: $(SRC_SRCS)
+	@echo Create $(SRC_SRCS)
+
+$(SRC_SRCS): %: %.c
+	@$(CC) $(CFLAGS) -o $@ $<
 
 $(POC_SRCS): %: %.c
 	@$(CC) $(CFLAGS) -o $@ $<
