@@ -9,6 +9,7 @@ import threading
 
 def server(game):
     """interprets the server's output"""
+    # try to get something from each tcpclient process
     for key in game.ping:
         try:
             line = game.ping[key][1].get(timeout=0.001)
