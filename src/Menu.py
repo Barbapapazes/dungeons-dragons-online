@@ -265,6 +265,7 @@ class JoinMenu(Menu):
             tmp_thread.daemon = True
             # thread is launched
             tmp_thread.start()
+            print(client_ip)
             self.game.ping[client_ip] = (tmp_thread, tmp_queue)
 
     def display_menu(self):

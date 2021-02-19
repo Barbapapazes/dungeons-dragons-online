@@ -17,7 +17,8 @@ def server(game):
             pass
         else:
             line = line.decode("ascii")
-            print(line)
+            line = line[:-1]
+            print(key + " " + line)
 
     try:
         # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
@@ -37,13 +38,14 @@ def server(game):
             # split the ip and the port
             add_connection(game, line)
             first_connection(game, line[1])
-            # add the new ip to the client_ip_port set
             game.client_ip_port.add(line[1])
+            # add the new ip to the client_ip_port set
 
         # if an ip is sent, add it to the set
         elif line.startswith("ip"):
             line = line.split(" ")
             add_connection(game, line)
+            game.client_ip_port.add(line[1])
 
         # if a movement is sent
         elif line.startswith("move"):
@@ -75,7 +77,6 @@ def server(game):
 
 
 def add_connection(game, line):
-    game.client_ip_port.add(line[1])
     # if line[1] not in self.players:
     #     self.players[line[1]] = Player()
     tmp = line[1].split(":")
@@ -144,11 +145,14 @@ def client(game, msg=None):
             + "\n"
         )
     msg = str.encode(msg)
-
-    for ip in game.client_ip_port:
+    tmp = game.client_ip_port.copy()
+    for ip in tmp:
         # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
-        game.connections[ip].stdin.write(msg)
-        game.connections[ip].stdin.flush()
+        try:
+            game.connections[ip].stdin.write(msg)
+            game.connections[ip].stdin.flush()
+        except BrokenPipeError:
+            pass
 
 
 def first_connection(game, target_ip):
