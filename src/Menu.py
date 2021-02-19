@@ -1,4 +1,5 @@
 """This file contains the implementation of simple menus"""
+from .Settings import RESOLUTION, WHITE, BLACK
 from .interface import Button, TextEntry
 import pygame as pg
 import time
@@ -15,6 +16,9 @@ class Menu:
         self.menu_background = pg.image.load(
             "src/assets/menus/background.png"
         ).convert_alpha()
+        self.menu_background = pg.transform.scale(
+            self.menu_background, RESOLUTION
+        )
         self.clock = pg.time.Clock()
 
     def display_to_game(self):
@@ -35,7 +39,7 @@ class MainMenu(Menu):
             self.game.resolution[1] // 2,
             "Character Customization",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
         )
         self.exit_button = Button(
@@ -44,7 +48,7 @@ class MainMenu(Menu):
             self.game.resolution[1] // 2 + 150,
             "Exit Game",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
         )
 
@@ -69,10 +73,10 @@ class MainMenu(Menu):
             self.game.display.blit(self.menu_background, (0, 0))
 
             self.character_button.display_button()
-            self.character_button.color_on_mouse("#FFFFFF")
+            self.character_button.color_on_mouse(WHITE)
 
             self.exit_button.display_button()
-            self.exit_button.color_on_mouse("#FFFFFF")
+            self.exit_button.color_on_mouse(WHITE)
 
             self.display_to_game()
             self.clock.tick(30)
@@ -84,17 +88,13 @@ class CharacterMenu(Menu):
     def __init__(self, game):
         Menu.__init__(self, game)
 
-        self.menu_background = pg.image.load(
-            "src/assets/menus/background.png"
-        ).convert_alpha()
-
         self.play_button = Button(
             self.game,
             self.game.resolution[0] // 2,
             self.game.resolution[1] // 2,
             "Play",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
         )
         self.join_button = Button(
@@ -103,7 +103,7 @@ class CharacterMenu(Menu):
             self.game.resolution[1] // 2 + 150,
             "Join",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
         )
         self.return_button = Button(
@@ -112,7 +112,7 @@ class CharacterMenu(Menu):
             self.game.resolution[1] // 2,
             "<",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
             "small",
         )
@@ -149,7 +149,7 @@ class CharacterMenu(Menu):
 
             for button in self.button_list:
                 button.display_button()
-                button.color_on_mouse("#FFFFFF")
+                button.color_on_mouse(WHITE)
 
             self.display_to_game()
             self.clock.tick(30)
@@ -160,10 +160,6 @@ class JoinMenu(Menu):
 
     def __init__(self, game):
         Menu.__init__(self, game)
-
-        self.menu_background = pg.image.load(
-            "src/assets/menus/background.png"
-        ).convert_alpha()
 
         self.ip_input = TextEntry(
             self.game,
@@ -182,7 +178,7 @@ class JoinMenu(Menu):
             self.game.resolution[1] // 2,
             "<",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
             "small",
         )
@@ -193,7 +189,7 @@ class JoinMenu(Menu):
             self.game.resolution[1] // 2 + 150,
             "Join",
             "src/fonts/enchanted_land.otf",
-            "#000000",
+            BLACK,
             40,
         )
 
@@ -261,7 +257,7 @@ class JoinMenu(Menu):
 
             for button in self.button_list:
                 button.display_button()
-                button.color_on_mouse("#FFFFFF")
+                button.color_on_mouse(WHITE)
             for textentry in self.textentry_list:
                 textentry.display_box()
 

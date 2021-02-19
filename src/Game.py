@@ -9,6 +9,7 @@ import threading
 import time
 import queue
 import socket
+from .Settings import RESOLUTION
 from .Menu import CharacterMenu, MainMenu, JoinMenu
 
 
@@ -21,7 +22,7 @@ class Game(object):
         self.playing = False
         self.menu_running = True
 
-        self.resolution = (1024, 768)
+        self.resolution = RESOLUTION
         self.window = pg.display.set_mode(self.resolution)
 
         # self.display is basically the canvas in which we blit everything
@@ -29,6 +30,7 @@ class Game(object):
         self.background = pg.image.load(
             "src/assets/menus/background.png"
         ).convert_alpha()
+        self.background = pg.transform.scale(self.background, RESOLUTION)
         self.display.blit(self.background, (0, 0))
         pg.display.set_caption("Donjons & Python")
 
