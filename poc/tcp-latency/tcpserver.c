@@ -23,16 +23,21 @@ void stop(char *msg)
  * @brief end the program and avoid orphans children
  * 
  */
-void end(int signum)
+void end_child(int signum)
 {
     pid_t pid = getpid();         //get pid of the current process
     killpg(getpgid(pid), SIGINT); //kill all process that have the same group id as the current process (here kill all child and the current process)
-    exit(EXIT_SUCCESS);           //end the process if SIGINT hasn't already done it
+    _exit(EXIT_SUCCESS);          //end the process if SIGINT hasn't already done it
+}
+void end(int signum)
+{
+    _exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[])
 {
-    signal(SIGUSR1, &end); // if SIGUSR1 is received execute end function
+    signal(SIGINT, &end);
+    signal(SIGUSR1, &end_child); // if SIGUSR1 is received execute end function
 
     char buffer[BUFFSIZE];                        //Buffer of 8192 char
     int n;                                        //counter of char received
@@ -68,7 +73,6 @@ int main(int argc, char *argv[])
         if ((childpid = fork()) == 0) //fork the program so we can handle multiple tcp connection
         {
             close(sockfd); //if we are in child the sockfd is no more needed so we close it
-
             n = recv(newsockfd, buffer, BUFFSIZE, 0);
             do
             {
