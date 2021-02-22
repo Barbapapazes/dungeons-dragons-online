@@ -29,14 +29,9 @@ void end_child(int signum)
     killpg(getpgid(pid), SIGINT); //kill all process that have the same group id as the current process (here kill all child and the current process)
     _exit(EXIT_SUCCESS);          //end the process if SIGINT hasn't already done it
 }
-void end(int signum)
-{
-    _exit(EXIT_SUCCESS);
-}
 
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, &end);
     signal(SIGUSR1, &end_child); // if SIGUSR1 is received execute end function
 
     char buffer[BUFFSIZE];                        //Buffer of 8192 char
