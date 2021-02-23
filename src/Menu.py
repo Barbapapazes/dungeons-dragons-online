@@ -3,6 +3,9 @@ from .interface import Button, TextEntry
 import pygame as pg
 import time
 import subprocess
+import queue
+import threading
+from .Network import enqueue_output
 
 
 class Menu:
@@ -250,6 +253,20 @@ class JoinMenu(Menu):
             # write the encoded message on stdin then flush it to avoid conflict
             self.game.connections[client_ip].stdin.write(msg)
             self.game.connections[client_ip].stdin.flush()
+
+            # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
+            tmp_queue = queue.Queue()
+            tmp_thread = threading.Thread(
+                target=enqueue_output,
+                args=(self.game.connections[client_ip].stdout, tmp_queue),
+            )
+
+            # the thread will die with the end of the main procus
+            tmp_thread.daemon = True
+            # thread is launched
+            tmp_thread.start()
+            print(client_ip)
+            self.game.ping[client_ip] = (tmp_thread, tmp_queue)
 
     def display_menu(self):
         """[summary] Displays the menu on our screen"""
