@@ -33,6 +33,32 @@ char* serialize_packet(game_packet g);
  */
 game_packet deserialize_packet(unsigned char *s_packet);
 
+/*
+    Game packets index
+    ------------------
 
+    -----------------------------
+    | player_id | action | data |
+    -----------------------------
+
+    --
+    "player_id": a number between 0 and the maximum possible players, which acts as an identifier for the player 
+    --
+    "action" : a number which represent an action, exterior the game (0;3), in-game (3;)
+        -> 0 : First connection of a player 
+        -> 1 : Game data for those who connect or if we need to update the game state for everyone (not sure of what would be in the data yet)
+        -> 2 : IP + Port packet
+        -> 3 : Disconnect packet, with IP+Port in data
+        -> 4 : "Move" player packet with coords separated by ";" as data 
+        -> 5 : "Attack" player packet with ??? as data
+        -> 6 : "Chest opening" player packet with ??? as data
+        -> 7 : "Chat" player packet with the message to send to the chat as data
+        -> 8 : Enemies movements packet 
+        -> 9 ! Enemies attack packet
+        -> 10 : maybe more in the future...
+    --
+    "data" : this string contains the action of the player, different for each value of action. It may contain IPs, movements instructions...
+    --  
+*/
 
 #endif 
