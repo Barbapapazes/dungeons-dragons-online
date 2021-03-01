@@ -2,17 +2,14 @@
 our game"""
 import queue
 import signal
-import subprocess
 import threading
-import time
 from os import path
 
 import pygame as pg
 
 from src.config.assets import menus_folder
-from src.config.network import SERVER_PATH
 from src.network import Client, Network
-from src.utils.network import enqueue_output, get_ip
+from src.utils.network import enqueue_output
 
 from .menu import CharacterMenu, JoinMenu, MainMenu
 
@@ -47,43 +44,11 @@ class Game:
         # ------MENUS------ #
         self.main_menu = MainMenu(self)
         self.character_menu = CharacterMenu(self)
-        # The current menu is the menu we always display
-        self.current_menu = self.main_menu
         self.join_menu = JoinMenu(self)
+        self.current_menu = self.main_menu
 
-        # default port will be increased if already used
-        self.my_port = 8000
-        tmp_ip = get_ip()
         self.n = Network(self)
         self.c = Client(self)
-
-        # create a subprocess that will execute a new process. list is equivalent to argv[].
-        # Pipe (new file-descriptor) are used to allow us to communicate with the process.
-        # If we don't precise them the subprocess inherite from the main process and so will use default fd.
-        self.serv = subprocess.Popen(
-            [SERVER_PATH, str(self.my_port), str(tmp_ip)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        # we make the process wait to ensure that the subprocess above has started or ended if an error occured
-        time.sleep(0.1)
-        # poll check if the process has ended or not. If the process is running the None is returned
-        poll = self.serv.poll()
-        while poll is not None:
-            self.my_port += 1
-            self.serv = subprocess.Popen(
-                [SERVER_PATH, str(self.my_port), str(tmp_ip)],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            time.sleep(0.1)
-            poll = self.serv.poll()
-
-        # ip stored in self.my_ip (exemple : 127.0.0.1:8000)
-        self.my_ip = str(str(tmp_ip) + ":" + str(self.my_port))
-        print(self.my_ip)
 
         # client_ip_port is a set to avoid duplicate. it contains ip string (exemple : {"127.0.0.1:8000","127.0.0.1:8001"})
         self.client_ip_port = set()
@@ -96,7 +61,7 @@ class Game:
 
         # allow to execute enqueue_output in parralel to read in a NON-BLOCKING way
         self.t = threading.Thread(
-            target=enqueue_output, args=(self.serv.stdout, self.q)
+            target=enqueue_output, args=(self.n._server.stdout, self.q)
         )
         # the thread will die with the end of the main procus
         self.t.daemon = True

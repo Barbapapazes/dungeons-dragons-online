@@ -22,9 +22,9 @@ class Client:
             # If no message is specified then we send the position of the client
             msg = (
                 "move " +
-                self.game.my_ip +
+                self.game.n.ip +
                 " " +
-                str(self.game.players[self.game.my_ip].pos) +
+                str(self.game.players[self.game.n.ip].pos) +
                 "\n"
             )
         msg = str.encode(msg)
@@ -40,11 +40,11 @@ class Client:
     def disconnect(self):
         """handle the disconnection of the player and end all the subprocess"""
         # sends to all other players that the client has disconnected
-        self.send(str("disconnect " + self.game.my_ip + "\n"))
+        self.send(str("disconnect " + self.game.n.get_socket() + "\n"))
         # ensure that the disconnect message has been sent
         time.sleep(0.5)
         # end the serv process (look for tcpserver to get more details)
-        os.kill(self.game.serv.pid, signal.SIGUSR1)
+        os.kill(self.game.n._server.pid, signal.SIGUSR1)
         for ip in self.game.connections:
             # end all the tcpclient process that are in connections dictionnary
             os.kill(self.game.connections[ip].pid, signal.SIGUSR1)

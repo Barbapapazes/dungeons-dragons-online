@@ -4,15 +4,64 @@ import os
 import queue
 import signal
 import time
-import socket
 import threading
-from src.config.network import CLIENT_PATH
-from src.utils.network import enqueue_output
+from src.config.network import CLIENT_PATH, SERVER_PATH
+from src.utils.network import enqueue_output, get_ip
+from os import path
 
 
 class Network:
     def __init__(self, game):
         self.game = game
+        self.ip = get_ip()
+        self.port = 8000
+        self._server = self.create_serveur()
+        print(self.get_socket())
+
+    def create_serveur(self):
+        """Create the server
+
+        Returns:
+            Popen: the server
+        """
+        # create a subprocess that will execute a new process. list is equivalent to argv[].
+        # Pipe (new file-descriptor) are used to allow us to communicate with the process.
+        # If we don't precise them the subprocess inherite from the main process and so will use default fd.
+        server = subprocess.Popen(
+            [SERVER_PATH, str(self.port), str(self.ip)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        # we make the process wait to ensure that the subprocess above has started or ended if an error occured
+        time.sleep(0.1)
+        # poll check if the process has ended or not. If the process is running the None is returned
+        return self.check_server(server)
+
+    def check_server(self, server):
+        """Check is the server is created
+
+        Args:
+            server (Popen)
+
+        Returns:
+            Popen
+        """
+        poll = server.poll()
+        while poll is not None:
+            self.port += 1
+            server = subprocess.Popen(
+                [SERVER_PATH, str(self.port), str(self.ip)],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            time.sleep(0.1)
+            poll = server.poll()
+        return server
+
+    def get_socket(self):
+        return str(self.ip) + ":" + str(self.port)
 
     def server(self):
         """interprets the server's output"""

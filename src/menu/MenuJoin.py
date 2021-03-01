@@ -102,9 +102,8 @@ class JoinMenu(Menu):
             tmp = client_ip.split(":")
             # initialize a connection to ip contained in sys.argv[2]
             self.game.connections[client_ip] = tmp_proc
-            tmp = self.game.my_ip.split(":")
             # encode in binary a message that contains : first + client ip:port
-            msg = str("first " + str(tmp[0]) + ":" + tmp[1] + "\n")
+            msg = str("first " + str(self.game.n.ip) + ":" + str(self.game.n.port) + "\n")
             msg = str.encode(msg)
             # write the encoded message on stdin then flush it to avoid conflict
             self.game.connections[client_ip].stdin.write(msg)
