@@ -11,7 +11,7 @@ from src.config.colors import WHITE
 from src.interface import Button, Input
 from src.menu._menu import Menu
 
-from ..Network import enqueue_output
+from src.utils.network import enqueue_output
 
 
 class JoinMenu(Menu):
@@ -135,8 +135,8 @@ class JoinMenu(Menu):
             for button in self.buttons:
                 button.display_button()
                 button.color_on_mouse(WHITE)
-            for textentry in self.textinputs:
-                textentry.display_box()
+            for input in self.inputs:
+                input.display_box()
 
             self.display_to_game()
             self.game.clock.tick(30)

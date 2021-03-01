@@ -1,7 +1,5 @@
 import pygame as pg
-
-BROWN = "#A52A2A"
-WHITE = "#FFFFFF"
+from src.config.colors import WHITE, BROWN
 
 
 class Input(object):

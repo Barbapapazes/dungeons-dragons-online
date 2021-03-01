@@ -1,4 +1,6 @@
 """Colors config"""
 
 
-WHITE = "#000000"
+BLACK = "#000000"
+WHITE = "#ffffff"
+BROWN = "#A52A2A"

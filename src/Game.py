@@ -11,7 +11,9 @@ import pygame as pg
 from src.config.assets import menus_folder
 
 from .menu import CharacterMenu, JoinMenu, MainMenu
-from .Network import client, disconnect, enqueue_output, get_ip, server
+from .Network import client, disconnect
+from src.utils.network import get_ip, enqueue_output
+from src.network import Network
 
 
 class Game:
@@ -51,6 +53,7 @@ class Game:
         # default port will be increased if already used
         self.my_port = 8000
         tmp_ip = get_ip()
+        self.n = Network(self)
 
         # create a subprocess that will execute a new process. list is equivalent to argv[].
         # Pipe (new file-descriptor) are used to allow us to communicate with the process.
@@ -137,5 +140,5 @@ class Game:
             self.update_screen()
             self.check_events()
             self.clock.tick(30)
-            server(self)
+            self.n.server()
             client(self, "test\n")
