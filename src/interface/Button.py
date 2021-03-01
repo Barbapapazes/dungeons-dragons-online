@@ -1,7 +1,9 @@
 import pygame as pg
+from os import path
+from src.config.assets import menus_folder
 
 
-class Button(object):
+class Button:
     """The button class which is used in our menus"""
 
     def __init__(
@@ -17,10 +19,11 @@ class Button(object):
 
         # Background of the Button
         self.button_sprite_path = (
-            "src/assets/menus/" + self.size + "_button.png"
+            path.join(menus_folder, self.size + "_button.png")
         )
         self.hover_sprite_path = (
-            "src/assets/menus/" + self.size + "_button_hover.png"
+            path.join(menus_folder, self.size + "_button_hover.png")
+
         )
         self.button_background = pg.image.load(
             self.button_sprite_path

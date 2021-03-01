@@ -1,2 +1,2 @@
 from .Button import Button
-from .TextEntry import TextEntry
+from .Input import Input

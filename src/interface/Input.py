@@ -4,7 +4,7 @@ BROWN = "#A52A2A"
 WHITE = "#FFFFFF"
 
 
-class TextEntry(object):
+class Input(object):
     """This class aims to create text entries where the user can write
     things such as his character name"""
 

@@ -1,21 +1,31 @@
 """This file contains the Game class which is the central element of
 our game"""
-import pygame as pg
-import sys
-import subprocess
-import os
+import queue
 import signal
+import subprocess
 import threading
 import time
-import queue
-from .Menu import CharacterMenu, MainMenu, JoinMenu
-from .Network import enqueue_output, server, disconnect, get_ip, client
+from os import path
+
+import pygame as pg
+from src.config.assets import menus_folder
+
+from .menu import CharacterMenu, JoinMenu, MainMenu
+from .Network import client, disconnect, enqueue_output, get_ip, server
 
 
-class Game(object):
+class Game:
     """The game class"""
 
     def __init__(self):
+
+        # create a signal handler that will ignore SIGINT (CTRL + C) signals.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        pg.init()
+        pg.display.set_caption("Donjons & Python")
+        pg.mouse.set_cursor(*pg.cursors.tri_left)
+        self.clock = pg.time.Clock()
 
         self.running = True
         self.playing = False
@@ -26,11 +36,10 @@ class Game(object):
 
         # self.display is basically the canvas in which we blit everything
         self.display = pg.Surface(self.resolution)
-        self.background = pg.image.load(
-            "src/assets/menus/background.png"
-        ).convert_alpha()
+        self.background = pg.transform.scale(pg.image.load(
+            path.join(menus_folder, "background.png")
+        ), self.resolution)
         self.display.blit(self.background, (0, 0))
-        pg.display.set_caption("Donjons & Python")
 
         # ------MENUS------ #
         self.main_menu = MainMenu(self)
@@ -38,7 +47,6 @@ class Game(object):
         # The current menu is the menu we always display
         self.current_menu = self.main_menu
         self.join_menu = JoinMenu(self)
-        self.clock = pg.time.Clock()
 
         # default port will be increased if already used
         self.my_port = 8000
