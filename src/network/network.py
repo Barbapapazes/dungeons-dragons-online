@@ -6,6 +6,7 @@ import signal
 import time
 import socket
 import threading
+from src.config.network import CLIENT_PATH
 from src.utils.network import enqueue_output
 
 
@@ -57,7 +58,7 @@ class Network:
         tmp = line[1].split(":")
 
         self.game.connections[line[1]] = subprocess.Popen(
-            ["./src/tcpclient", tmp[0], tmp[1]],
+            [CLIENT_PATH, tmp[0], tmp[1]],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

@@ -8,12 +8,13 @@ import time
 from os import path
 
 import pygame as pg
+
 from src.config.assets import menus_folder
+from src.config.network import SERVER_PATH
+from src.network import Client, Network
+from src.utils.network import enqueue_output, get_ip
 
 from .menu import CharacterMenu, JoinMenu, MainMenu
-from .Network import client, disconnect
-from src.utils.network import get_ip, enqueue_output
-from src.network import Network
 
 
 class Game:
@@ -54,12 +55,13 @@ class Game:
         self.my_port = 8000
         tmp_ip = get_ip()
         self.n = Network(self)
+        self.c = Client(self)
 
         # create a subprocess that will execute a new process. list is equivalent to argv[].
         # Pipe (new file-descriptor) are used to allow us to communicate with the process.
         # If we don't precise them the subprocess inherite from the main process and so will use default fd.
         self.serv = subprocess.Popen(
-            ["./src/tcpserver", str(self.my_port), str(tmp_ip)],
+            [SERVER_PATH, str(self.my_port), str(tmp_ip)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -71,7 +73,7 @@ class Game:
         while poll is not None:
             self.my_port += 1
             self.serv = subprocess.Popen(
-                ["./src/tcpserver", str(self.my_port), str(tmp_ip)],
+                [SERVER_PATH, str(self.my_port), str(tmp_ip)],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -109,7 +111,7 @@ class Game:
             if event.type == pg.QUIT:
                 self.current_menu.displaying = False
                 self.running, self.playing = False, False
-                disconnect(self)
+                self.c.disconnect()
                 quit(self)
             if self.menu_running:
                 self.current_menu.check_events(event)
@@ -125,7 +127,7 @@ class Game:
         """A function to properly quit the game"""
         self.running, self.playing = False, False
         self.current_menu.displaying = False
-        disconnect(self)
+        self.c.disconnect(self)
 
     def update_screen(self):
         """Updates the whole screen by bliting self.display"""
@@ -141,4 +143,4 @@ class Game:
             self.check_events()
             self.clock.tick(30)
             self.n.server()
-            client(self, "test\n")
+            self.c.send("test\n")
