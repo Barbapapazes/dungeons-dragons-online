@@ -52,10 +52,10 @@ class MainMenu(Menu):
         )
 
     def check_events(self, event):
-        """[summary] This method deals with the user inputs
+        """This method deals with the user inputs
             on the different buttons of the menu
         Args:
-            event ([type]): [description] a pygame event
+            event (Event) : a pygame event
         """
         if self.character_button.is_clicked(event):
             self.game.current_menu = self.game.character_menu
@@ -64,7 +64,7 @@ class MainMenu(Menu):
             self.game.game_quit()
 
     def display_menu(self):
-        """[summary] Displays the menu on our screen"""
+        """Displays the menu on our screen"""
         self.displaying = True
         while self.displaying:
             # Checking for events
@@ -126,10 +126,10 @@ class CharacterMenu(Menu):
         ]
 
     def check_events(self, event):
-        """[summary] This method deals with the user inputs
+        """This method deals with the user inputs
             on the different buttons of the menu
         Args:
-            event ([type]): [description] a pygame event
+            event (Event): a pygame event
         """
         if self.play_button.is_clicked(event):
             self.game.menu_running = False
@@ -143,7 +143,7 @@ class CharacterMenu(Menu):
             self.displaying = False
 
     def display_menu(self):
-        """ Displays the menu on our screen"""
+        """Displays the menu on our screen"""
         self.displaying = True
         while self.displaying:
             # Checking for events
@@ -213,10 +213,10 @@ class JoinMenu(Menu):
         ]
 
     def check_events(self, event):
-        """[summary] This method deals with the user inputs
+        """This method deals with the user inputs
             on the different buttons of the menu
         Args:
-            event ([type]): [description] a pygame event
+            event (Event): a pygame event
         """
         self.ip_input.handle_events(event)
         if self.return_button.is_clicked(event):
@@ -269,7 +269,7 @@ class JoinMenu(Menu):
             self.game.ping[client_ip] = (tmp_thread, tmp_queue)
 
     def display_menu(self):
-        """[summary] Displays the menu on our screen"""
+        """Displays the menu on our screen"""
         self.displaying = True
         while self.displaying:
             # Checking for events

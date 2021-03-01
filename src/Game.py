@@ -8,7 +8,6 @@ import signal
 import threading
 import time
 import queue
-import socket
 from .Menu import CharacterMenu, MainMenu, JoinMenu
 from .Network import enqueue_output, server, disconnect, get_ip, client
 
