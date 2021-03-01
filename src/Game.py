@@ -2,6 +2,7 @@
 our game"""
 import queue
 import signal
+import sys
 import threading
 from os import path
 
@@ -56,14 +57,14 @@ class Game:
         # connections is a dictionnary that contains all the tcpclient subprocess. Keys are the ip:port
         self.connections = {}
 
-        # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
+        # queue.Queue() is a queue FIFO (First In First Out) with an unlimited size
         self.q = queue.Queue()
 
-        # allow to execute enqueue_output in parralel to read in a NON-BLOCKING way
+        # allow to execute enqueue_output in parallel to read in a NON-BLOCKING way
         self.t = threading.Thread(
             target=enqueue_output, args=(self.n._server.stdout, self.q)
         )
-        # the thread will die with the end of the main procus
+        # the thread will die with the end of the main procuss
         self.t.daemon = True
         # thread is launched
         self.t.start()
@@ -74,10 +75,7 @@ class Game:
         "Checks for events in our game"
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                self.current_menu.displaying = False
-                self.running, self.playing = False, False
-                self.c.disconnect()
-                quit(self)
+                self.quit()
             if self.menu_running:
                 self.current_menu.check_events(event)
             if self.playing:
@@ -88,11 +86,13 @@ class Game:
         """The function to switch the current character in the game"""
         pass
 
-    def game_quit(self):
+    def quit(self):
         """A function to properly quit the game"""
         self.running, self.playing = False, False
         self.current_menu.displaying = False
-        self.c.disconnect(self)
+        self.c.disconnect()
+        pg.quit()
+        sys.exit()
 
     def update_screen(self):
         """Updates the whole screen by bliting self.display"""
