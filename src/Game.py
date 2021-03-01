@@ -51,26 +51,6 @@ class Game:
         self.n = Network(self)
         self.c = Client(self)
 
-        # client_ip_port is a set to avoid duplicate. it contains ip string (exemple : {"127.0.0.1:8000","127.0.0.1:8001"})
-        self.client_ip_port = set()
-
-        # connections is a dictionnary that contains all the tcpclient subprocess. Keys are the ip:port
-        self.connections = {}
-
-        # queue.Queue() is a queue FIFO (First In First Out) with an unlimited size
-        self.q = queue.Queue()
-
-        # allow to execute enqueue_output in parallel to read in a NON-BLOCKING way
-        self.t = threading.Thread(
-            target=enqueue_output, args=(self.n._server.stdout, self.q)
-        )
-        # the thread will die with the end of the main procuss
-        self.t.daemon = True
-        # thread is launched
-        self.t.start()
-        # dic that will contains multiple thread to read tcpclient
-        self.ping = {}
-
     def check_events(self):
         "Checks for events in our game"
         for event in pg.event.get():

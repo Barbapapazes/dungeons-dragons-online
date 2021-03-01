@@ -97,23 +97,23 @@ class JoinMenu(Menu):
             self.displaying = False
             self.game.menu_running = False
             self.game.playing = True
-            self.game.client_ip_port.add(client_ip)
+            self.game.n.client_ip_port.add(client_ip)
             # split the ip:port to obtains ip and port
             tmp = client_ip.split(":")
             # initialize a connection to ip contained in sys.argv[2]
-            self.game.connections[client_ip] = tmp_proc
+            self.game.n.connections[client_ip] = tmp_proc
             # encode in binary a message that contains : first + client ip:port
             msg = str("first " + str(self.game.n.ip) + ":" + str(self.game.n.port) + "\n")
             msg = str.encode(msg)
             # write the encoded message on stdin then flush it to avoid conflict
-            self.game.connections[client_ip].stdin.write(msg)
-            self.game.connections[client_ip].stdin.flush()
+            self.game.n.connections[client_ip].stdin.write(msg)
+            self.game.n.connections[client_ip].stdin.flush()
 
             # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
             tmp_queue = queue.Queue()
             tmp_thread = threading.Thread(
                 target=enqueue_output,
-                args=(self.game.connections[client_ip].stdout, tmp_queue),
+                args=(self.game.n.connections[client_ip].stdout, tmp_queue),
             )
 
             # the thread will die with the end of the main procus
@@ -121,7 +121,7 @@ class JoinMenu(Menu):
             # thread is launched
             tmp_thread.start()
             print(client_ip)
-            self.game.ping[client_ip] = (tmp_thread, tmp_queue)
+            self.game.n.ping[client_ip] = (tmp_thread, tmp_queue)
 
     def display_menu(self):
         """Displays the menu on our screen"""

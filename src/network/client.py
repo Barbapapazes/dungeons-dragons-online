@@ -28,12 +28,12 @@ class Client:
                 "\n"
             )
         msg = str.encode(msg)
-        tmp = self.game.client_ip_port.copy()
+        tmp = self.game.n.client_ip_port.copy()
         for ip in tmp:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             try:
-                self.game.connections[ip].stdin.write(msg)
-                self.game.connections[ip].stdin.flush()
+                self.game.n.connections[ip].stdin.write(msg)
+                self.game.n.connections[ip].stdin.flush()
             except BrokenPipeError:
                 pass
 
@@ -45,6 +45,6 @@ class Client:
         time.sleep(0.5)
         # end the serv process (look for tcpserver to get more details)
         os.kill(self.game.n._server.pid, signal.SIGUSR1)
-        for ip in self.game.connections:
+        for ip in self.game.n.connections:
             # end all the tcpclient process that are in connections dictionnary
-            os.kill(self.game.connections[ip].pid, signal.SIGUSR1)
+            os.kill(self.game.n.connections[ip].pid, signal.SIGUSR1)

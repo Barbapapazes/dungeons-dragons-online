@@ -18,6 +18,31 @@ class Network:
         self._server = self.create_serveur()
         print(self.get_socket())
 
+        self.client_ip_port = set()  # is a set to avoid duplicate
+        self.connections = dict()  # contains subprocess with ip:port as a key
+        self.ping = dict()  # contains multiple thread to read tcpclient
+
+        self.q = queue.Queue()
+        self.t = self.create_pipeline()
+        self.start_pipeline()
+
+    def start_pipeline(self):
+        """Start the thread"""
+        # the thread will die with the end of the main procuss
+        self.t.daemon = True
+        # thread is launched
+        self.t.start()
+
+    def create_pipeline(self):
+        """Create a thread to read stdout in a non-blocking way
+
+        Returns:
+            Thread
+        """
+        return threading.Thread(
+            target=enqueue_output, args=(self._server.stdout, self.q)
+        )
+
     def create_serveur(self):
         """Create the server
 
@@ -66,9 +91,9 @@ class Network:
     def server(self):
         """interprets the server's output"""
         # try to get something from each tcpclient process
-        for key in self.game.ping:
+        for key in self.ping:
             try:
-                line = self.game.ping[key][1].get(timeout=0.001)
+                line = self.ping[key][1].get(timeout=0.001)
             except queue.Empty:
                 pass
             else:
@@ -78,7 +103,7 @@ class Network:
 
         try:
             # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
-            line = self.game.q.get(timeout=0.001)
+            line = self.q.get(timeout=0.001)
         except queue.Empty:
             return
         else:
@@ -106,7 +131,7 @@ class Network:
         line = line.split(" ")
         tmp = line[1].split(":")
 
-        self.game.connections[line[1]] = subprocess.Popen(
+        self.connections[line[1]] = subprocess.Popen(
             [CLIENT_PATH, tmp[0], tmp[1]],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -116,14 +141,14 @@ class Network:
         tmp_queue = queue.Queue()
         tmp_thread = threading.Thread(
             target=enqueue_output,
-            args=(self.game.connections[line[1]].stdout, tmp_queue),
+            args=(self.connections[line[1]].stdout, tmp_queue),
         )
 
         # the thread will die with the end of the main procuss
         tmp_thread.daemon = True
         # thread is launched
         tmp_thread.start()
-        self.game.ping[line[1]] = (tmp_thread, tmp_queue)
+        self.ping[line[1]] = (tmp_thread, tmp_queue)
 
     def first_connection(self, line):
         """Define what the program does when a new connection occurres
@@ -133,20 +158,20 @@ class Network:
         """
         line = line.split(" ")
         target_ip = line[1]
-        for ip in self.game.client_ip_port:
+        for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str("ip " + target_ip + "\n")
             msg = str.encode(msg)
-            self.game.connections[ip].stdin.write(msg)
-            self.game.connections[ip].stdin.flush()
+            self.connections[ip].stdin.write(msg)
+            self.connections[ip].stdin.flush()
 
-        for ip in self.game.client_ip_port:
+        for ip in self.client_ip_port:
             # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
             msg = str("ip " + ip + "\n")
             msg = str.encode(msg)
-            self.game.connections[target_ip].stdin.write(msg)
-            self.game.connections[target_ip].stdin.flush()
+            self.connections[target_ip].stdin.write(msg)
+            self.connections[target_ip].stdin.flush()
 
             # block that sends the position
             # msg = str("move " + ip + " " + str(self.players[ip].pos) + "\n")
@@ -213,17 +238,17 @@ class Network:
         # delete his ip
 
     def add_to_clients(self, client):
-        self.game.client_ip_port.add(client)
+        self.client_ip_port.add(client)
 
     def remove_from_client(self, client):
-        self.game.client_ip_port.remove(client)
+        self.client_ip_port.remove(client)
 
     def remove_connexion(self, client):
-        del self.game.connections[client]
-        del self.game.ping[client]
+        del self.connections[client]
+        del self.ping[client]
 
     def kill(self, client):
-        pid = self.game.connections[client].pid
+        pid = self.connections[client].pid
         os.kill(pid, signal.SIGINT)
 
     @staticmethod
