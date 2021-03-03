@@ -12,7 +12,7 @@ from src.config.assets import menus_folder
 from src.network import Client, Network
 from src.utils.network import enqueue_output
 
-from .menu import CharacterMenu, JoinMenu, MainMenu
+from .menu import MenuCharacter, MenuJoin, MenuMain
 
 
 class Game:
@@ -43,13 +43,13 @@ class Game:
         self.display.blit(self.background, (0, 0))
 
         # ------MENUS------ #
-        self.main_menu = MainMenu(self)
-        self.character_menu = CharacterMenu(self)
-        self.join_menu = JoinMenu(self)
+        self.main_menu = MenuMain(self)
+        self.character_menu = MenuCharacter(self)
+        self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
 
-        self.n = Network(self)
-        self.c = Client(self)
+        self.network = Network(self)
+        self.client = Client(self)
 
     def check_events(self):
         "Checks for events in our game"
@@ -70,7 +70,7 @@ class Game:
         """A function to properly quit the game"""
         self.running, self.playing = False, False
         self.current_menu.displaying = False
-        self.c.disconnect()
+        self.client.disconnect()
         pg.quit()
         sys.exit()
 
@@ -87,5 +87,5 @@ class Game:
             self.update_screen()
             self.check_events()
             self.clock.tick(30)
-            self.n.server()
-            self.c.send("test\n")
+            self.network.server()
+            self.client.send("test\n")

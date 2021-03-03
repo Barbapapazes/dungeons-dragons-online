@@ -1,3 +1,3 @@
-from .MenuMain import MainMenu
-from .MenuCharacter import CharacterMenu
-from .MenuJoin import JoinMenu
+from .MenuMain import MenuMain
+from .MenuCharacter import MenuCharacter
+from .MenuJoin import MenuJoin

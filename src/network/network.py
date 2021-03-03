@@ -200,7 +200,11 @@ class Network:
         # self.players[line[1]] = Player()
         self.create_connection(line)
         self.first_connection(line)
-        self.add_to_clients(self.get_client_from(line))
+        try:
+            client = self.get_client_from(line)
+            self.add_to_clients(client)
+        except Exception as e:
+            print(e)
         # add the new ip to the client_ip_port set
 
     def new_ip(self, line):
@@ -211,7 +215,11 @@ class Network:
             line (str)
         """
         self.create_connection(line)
-        self.add_to_clients(self.get_client_from(line))
+        try:
+            client = self.get_client_from(line)
+            self.add_to_clients(client)
+        except Exception as e:
+            print(e)
 
     def move(self, line):
         line = line.split(" ")
@@ -229,10 +237,13 @@ class Network:
         self.game.players[line[1]].pos = list_pos
 
     def disconnect(self, line):
-        client = self.get_client_from(line)
-        self.remove_from_client(client)
-        self.kill(client)
-        self.remove_connexion(client)
+        try:
+            client = self.get_client_from(line)
+            self.remove_from_client(client)
+            self.kill(client)
+            self.remove_connexion(client)
+        except Exception as e:
+            print(e)
         # delete the player so it is not blit anymore
         # del self.players[line[1]]
         # delete his ip
@@ -254,4 +265,6 @@ class Network:
     @staticmethod
     def get_client_from(line):
         line = line.split(" ")
+        if len(line) == 1:
+            raise Exception("Can't split the line")
         return line[1]

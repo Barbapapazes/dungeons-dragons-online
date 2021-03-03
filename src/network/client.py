@@ -22,29 +22,29 @@ class Client:
             # If no message is specified then we send the position of the client
             msg = (
                 "move " +
-                self.game.n.ip +
+                self.game.network.ip +
                 " " +
-                str(self.game.players[self.game.n.ip].pos) +
+                str(self.game.players[self.game.network.ip].pos) +
                 "\n"
             )
         msg = str.encode(msg)
-        tmp = self.game.n.client_ip_port.copy()
+        tmp = self.game.network.client_ip_port.copy()
         for ip in tmp:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             try:
-                self.game.n.connections[ip].stdin.write(msg)
-                self.game.n.connections[ip].stdin.flush()
+                self.game.network.connections[ip].stdin.write(msg)
+                self.game.network.connections[ip].stdin.flush()
             except BrokenPipeError:
                 pass
 
     def disconnect(self):
         """handle the disconnection of the player and end all the subprocess"""
         # sends to all other players that the client has disconnected
-        self.send(str("disconnect " + self.game.n.get_socket() + "\n"))
+        self.send(str("disconnect " + self.game.network.get_socket() + "\n"))
         # ensure that the disconnect message has been sent
         time.sleep(0.5)
         # end the serv process (look for tcpserver to get more details)
-        os.kill(self.game.n._server.pid, signal.SIGUSR1)
-        for ip in self.game.n.connections:
+        os.kill(self.game.network._server.pid, signal.SIGUSR1)
+        for ip in self.game.network.connections:
             # end all the tcpclient process that are in connections dictionnary
-            os.kill(self.game.n.connections[ip].pid, signal.SIGUSR1)
+            os.kill(self.game.network.connections[ip].pid, signal.SIGUSR1)

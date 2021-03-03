@@ -5,7 +5,7 @@ from os import path
 from src.config.colors import WHITE
 
 
-class MainMenu(Menu):
+class MenuMain(Menu):
     """Defines the main menu with 2 buttons"""
 
     def __init__(self, game):

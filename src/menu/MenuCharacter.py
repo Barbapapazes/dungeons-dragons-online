@@ -8,7 +8,7 @@ from src.config.colors import WHITE
 import pygame as pg
 
 
-class CharacterMenu(Menu):
+class MenuCharacter(Menu):
     """The character customization menu"""
 
     def __init__(self, game):
