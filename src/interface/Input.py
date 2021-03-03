@@ -1,10 +1,8 @@
 import pygame as pg
-
-BROWN = "#A52A2A"
-WHITE = "#FFFFFF"
+from src.config.colors import WHITE, BROWN
 
 
-class TextEntry(object):
+class Input(object):
     """This class aims to create text entries where the user can write
     things such as his character name"""
 
