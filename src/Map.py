@@ -115,7 +115,7 @@ class Map:
             [int(map_lines[i][:-1]), int(map_lines[i + 1][:-1])]
             for i in range(-12, 0, 2)
         ]
-        self.map = [main_map]
+        self.map = main_map
         ### Setting minimap ###
         # Not done yet
         self.init_views()
@@ -135,9 +135,9 @@ class Map:
         # add view list here
 
     def draw(self, display, x, y):
-        "draw a part of map center in x,y"
+        "draw a part of map center in x,y (x and y being couted in tiles"
         s_width, s_height = RESOLUTION
         display.blit(
             self.map_canva,
-            (-x + s_width / 2, -y + s_height / 2),
+            (-x * TILE_SIZE + s_width / 2, -y * TILE_SIZE + s_height / 2),
         )  # display the carpet at the right place
