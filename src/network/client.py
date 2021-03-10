@@ -2,6 +2,7 @@
 import os
 import signal
 import time
+from src.utils.network import check_message
 
 
 class Client:
@@ -21,26 +22,39 @@ class Client:
         if msg is None:
             # If no message is specified then we send the position of the client
             msg = (
-                "move " +
-                self.game.network.ip +
-                " " +
-                str(self.game.players[self.game.network.ip].pos) +
-                "\n"
+                "move "
+                + self.game.network.ip
+                + " "
+                + str(self.game.players[self.game.network.ip].pos)
+                + "\n"
             )
-        msg = str.encode(msg)
+
+        try:
+            check_message(msg)
+        except ValueError:
+            print("message error")
+            return
+        msg = msg.split(" ")
+
         tmp = self.game.network.client_ip_port.copy()
         for ip in tmp:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             try:
-                self.game.network.connections[ip].stdin.write(msg)
-                self.game.network.connections[ip].stdin.flush()
+
+                for word in msg:
+                    word += '\n'
+                    word = str.encode(word)
+                    print(word)
+                    self.game.network.connections[ip].stdin.write(word)
+                    self.game.network.connections[ip].stdin.flush()
             except BrokenPipeError:
                 pass
 
     def disconnect(self):
         """handle the disconnection of the player and end all the subprocess"""
         # sends to all other players that the client has disconnected
-        self.send(str("disconnect " + self.game.network.get_socket() + "\n"))
+        self.send(str(str(self.game.own_id) + " 3 "
+                      + self.game.network.get_socket()))
         # ensure that the disconnect message has been sent
         time.sleep(0.5)
         # end the serv process (look for tcpserver to get more details)

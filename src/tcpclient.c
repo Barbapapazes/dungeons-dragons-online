@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <fcntl.h>
+#include "serialization.h"
 
 void stop(char *msg)
 {
@@ -35,12 +36,16 @@ int main(int argc, char *argv[])
     char *stdin_read = NULL;
     size_t size;
     int res, opt;
+    char *end; //pointer use in string to int conversion
     char buffer[80];
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //create a new tcp socket
     struct timeval timeout;
     struct timeval ping_in, ping_out;
+    unsigned char *s_packet;
     timeout.tv_sec = 0.1;
     timeout.tv_usec = 0;
+    game_packet game_data = {0, -1, ""}; // initialize a game_packet structure that will contain all the needed information
+
     if (sockfd < 0)
         stop("socket()");
     if (argc != 3)
@@ -109,13 +114,27 @@ int main(int argc, char *argv[])
 
     while (1)
     {
+        // the python program will send data by line block
         if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
             stop("getline()");
+        game_data.player_id = strtol(stdin_read, &end, 10);
+
+        if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
+            stop("getline()");
+        game_data.action = strtol(stdin_read, &end, 10);
+
+        if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
+            stop("getline()");
+        game_data.data = strdup(stdin_read); //duplicate so the data won't have the same adress as stdin_read and we can modify it
+        s_packet = serialize_packet(game_data);
+
         gettimeofday(&ping_in, NULL);                              // get time in s and µs when the packet has been sent
-        if (send(sockfd, stdin_read, strlen(stdin_read), 0) == -1) // send the message
+        if (send(sockfd, s_packet, sizeof(s_packet) * 4, 0) == -1) // send the message
             stop("send()");
+
         if (recv(sockfd, buffer, 12, 0) == -1) //wait for a server response
             stop("send()");
+
         gettimeofday(&ping_out, NULL);                                                                                         // get time in s and µs when the packet has been received
         sprintf(buffer, "ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec); //print the difference
         write(STDOUT_FILENO, buffer, strlen(buffer));

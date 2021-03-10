@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include "serialization.h"
 
 #define BUFFSIZE 1500
 
@@ -34,9 +35,12 @@ int main(int argc, char *argv[])
 {
     signal(SIGUSR1, &end); // if SIGUSR1 is received execute end function
 
-    char buffer[BUFFSIZE];                        //Buffer of 8192 char
-    int n;                                        //counter of char received
-    pid_t childpid, pid;                          //pid used for fork, pid used for group id
+    char buffer[BUFFSIZE];                                    //Buffer of 8192 char
+    int n;                                                    //counter of char received
+    pid_t childpid, pid;                                      //pid used for fork, pid used for group id
+    game_packet game_data = {0, -1, ""};                      // initialize a game_packet structure that will contain all the needed information
+    static const game_packet empty_game_packet = {0, -1, ""}; // initialize a game_packet structure that will be used to reset the first one
+
     int newsockfd;                                //file descriptor that will contains the client socket
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //server socket where client connects.
     if (sockfd < 0)
@@ -75,9 +79,11 @@ int main(int argc, char *argv[])
                 if ((n == -1))
                     stop("recv()");
                 buffer[n] = '\0';
+                game_data = deserialize_packet((unsigned char *)buffer);
+                sprintf(buffer, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
                 write(STDOUT_FILENO, buffer, strlen(buffer));
-                if (n < BUFFSIZE) //if n < BUFFSIZE it means that we're at the end of the packet so we send an acknowledge message
-                    send(newsockfd, "acknowledge", 12, 0);
+                send(newsockfd, "1", 12, 0);
+                game_data = empty_game_packet;
             } while ((n = recv(newsockfd, buffer, BUFFSIZE, 0)) > 0); //write the message in STDOUT_FILENO
 
             if ((close(newsockfd))) //close the attributed socket to avoid bind error

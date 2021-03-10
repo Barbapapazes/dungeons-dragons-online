@@ -6,7 +6,7 @@ import signal
 import time
 import threading
 from src.config.network import CLIENT_PATH, SERVER_PATH
-from src.utils.network import enqueue_output, get_ip
+from src.utils.network import enqueue_output, get_ip, check_message
 from os import path
 
 
@@ -21,6 +21,7 @@ class Network:
         self.client_ip_port = set()  # is a set to avoid duplicate
         self.connections = dict()  # contains subprocess with ip:port as a key
         self.ping = dict()  # contains multiple thread to read tcpclient
+        # contains all player_id associated to their ip
 
         self.q = queue.Queue()
         self.t = self.create_pipeline()
@@ -107,31 +108,36 @@ class Network:
         except queue.Empty:
             return
         else:
+            print(line)
             # if no exception is raised then line contains something
             line = line.decode("ascii")  # binary flux that we need to decode
             line = line[:-1]  # delete the final `\n`
 
             # first connection of a client
-            if line.startswith("first"):
+            if line[:1] == "0":
                 self.new_connexion(line)
 
-            elif line.startswith("ip"):
+            elif line[:1] == "2":
                 self.new_ip(line)
 
-            # if a movement is sent
-            elif line.startswith("move"):
-                self.move(line)
-
-            elif line.startswith("disconnect"):
+            elif line[:1] == "3":
                 self.disconnect(line)
+
+            elif line[:1] == "4":
+                self.change_id(line)
+
+            # if a movement is sent
+            elif line[:1] == "5":
+                self.move(line)
 
     def create_connection(self, line):
         # if line[1] not in self.players:
         #     self.players[line[1]] = Player()
         line = line.split(" ")
-        tmp = line[1].split(":")
-
-        self.connections[line[1]] = subprocess.Popen(
+        tmp = line[2].split(":")
+        if len(tmp) != 2:
+            return
+        self.connections[line[2]] = subprocess.Popen(
             [CLIENT_PATH, tmp[0], tmp[1]],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -141,14 +147,14 @@ class Network:
         tmp_queue = queue.Queue()
         tmp_thread = threading.Thread(
             target=enqueue_output,
-            args=(self.connections[line[1]].stdout, tmp_queue),
+            args=(self.connections[line[2]].stdout, tmp_queue),
         )
 
         # the thread will die with the end of the main procuss
         tmp_thread.daemon = True
         # thread is launched
         tmp_thread.start()
-        self.ping[line[1]] = (tmp_thread, tmp_queue)
+        self.ping[line[2]] = (tmp_thread, tmp_queue)
 
     def first_connection(self, line):
         """Define what the program does when a new connection occurres
@@ -157,27 +163,50 @@ class Network:
             target_ip (str): string that contains the ip:port of the new connection
         """
         line = line.split(" ")
-        target_ip = line[1]
+        target_ip = line[2]
+        if len(self.game.player_id) > 0:
+            new_id = str(self.game.player_id[list(
+                self.game.player_id.keys())[-1]] + 1)
+        else:
+            new_id = str(self.game.own_id + 1)
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
-            msg = str("ip " + target_ip + "\n")
-            msg = str.encode(msg)
-            self.connections[ip].stdin.write(msg)
-            self.connections[ip].stdin.flush()
+            msg = str(str(self.game.own_id) + " 2 "
+                      + target_ip + ":" + new_id + "\n")
+            try:
+                check_message(msg)
+            except ValueError:
+                print("message error")
+                return
+
+            for word in msg:
+                word = str.encode(word)
+                self.connections[target_ip].stdin.write(word)
+                self.connections[target_ip].stdin.flush()
 
         for ip in self.client_ip_port:
             # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
-            msg = str("ip " + ip + "\n")
-            msg = str.encode(msg)
-            self.connections[target_ip].stdin.write(msg)
-            self.connections[target_ip].stdin.flush()
+            msg = str(str(self.game.own_id) + " 2 " + ip + "\n")
+            try:
+                check_message(msg)
+            except ValueError:
+                print("message error")
+                return
 
-            # block that sends the position
-            # msg = str("move " + ip + " " + str(self.players[ip].pos) + "\n")
-            # msg = str.encode(msg)
-            # self.connections[target_ip].stdin.write(msg)
-            # self.connections[target_ip].stdin.flush()
+            for word in msg:
+                word = str.encode(word)
+                self.connections[target_ip].stdin.write(word)
+                self.connections[target_ip].stdin.flush()
+
+        msg = str(str(self.game.own_id) + " 4 "
+                  + new_id + "\n")
+
+        # block that sends the position
+        # msg = str("move " + ip + " " + str(self.players[ip].pos) + "\n")
+        # msg = str.encode(msg)
+        # self.connections[target_ip].stdin.write(msg)
+        # self.connections[target_ip].stdin.flush()
 
         # send the position of the main player
         # msg = str(
@@ -267,4 +296,10 @@ class Network:
         line = line.split(" ")
         if len(line) == 1:
             raise Exception("Can't split the line")
-        return line[1]
+        return line[2]
+
+    def change_id(self, line):
+        line = line.split(" ")
+        if len(line) == 1:
+            raise Exception("Can't split the line")
+        self.game.own_id = int(line[2])

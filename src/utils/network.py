@@ -30,3 +30,10 @@ def enqueue_output(out, queue_line):
     """
     for line in iter(out.readline, b""):
         queue_line.put(line)
+
+
+def check_message(msg: str):
+    msg = msg.split(" ")
+    if len(msg) != 3:
+        raise ValueError
+    return 0
