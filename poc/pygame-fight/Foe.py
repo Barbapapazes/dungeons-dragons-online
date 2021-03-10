@@ -10,6 +10,7 @@ class Foe:
         self.map = map
 
     def draw(self, display):
+        """
         [
             pg.draw.rect(
                 display,
@@ -20,6 +21,7 @@ class Foe:
             for i in range(-2, 3)
             if i ** 2 + j ** 2 <= 4
         ]
+        """
         pg.draw.rect(
             display,
             [0, 255, 0],
@@ -28,7 +30,7 @@ class Foe:
 
     def check_player(self, plist, fight, game):
         for p in plist.players:
-            if [p.x, p.y] in [
+            if p.map == self.map and [p.x, p.y] in [
                 [self.x + i, self.y + j]
                 for j in range(-2, 3)
                 for i in range(-2, 3)

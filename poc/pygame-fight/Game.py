@@ -14,7 +14,7 @@ class Game:
         self.map = Map(map)
         self.window = pg.display.set_mode((200, 200))
         self.plist = PlayerList([0, 0, 1, 0], ["m", 0])
-        self.flist = FoeList([7, 7, 3, 7], ["m", 0])
+        self.flist = FoeList([4, 7, 7, 7], ["m", 0])
         self.clock = pg.time.Clock()
         self.fight = FightList()
         self.mainloop()
