@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
     unsigned char *s_packet;
     timeout.tv_sec = 0.1;
     timeout.tv_usec = 0;
+    FILE *fp;
+    fp = fopen("log", "w");
     game_packet game_data = {0, -1, ""}; // initialize a game_packet structure that will contain all the needed information
 
     if (sockfd < 0)
@@ -125,6 +127,7 @@ int main(int argc, char *argv[])
 
         if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
             stop("getline()");
+        fprintf(fp, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
         game_data.data = strdup(stdin_read); //duplicate so the data won't have the same adress as stdin_read and we can modify it
         s_packet = serialize_packet(game_data);
 

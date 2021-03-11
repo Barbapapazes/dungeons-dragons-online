@@ -21,32 +21,20 @@ class Client:
 
         if msg is None:
             # If no message is specified then we send the position of the client
-            msg = (
-                "move "
-                + self.game.network.ip
-                + " "
-                + str(self.game.players[self.game.network.ip].pos)
-                + "\n"
-            )
+            msg = "0 0 0"
 
         try:
             check_message(msg)
         except ValueError:
             print("message error")
             return
-        msg = msg.split(" ")
 
         tmp = self.game.network.client_ip_port.copy()
         for ip in tmp:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             try:
 
-                for word in msg:
-                    word += '\n'
-                    word = str.encode(word)
-                    print(word)
-                    self.game.network.connections[ip].stdin.write(word)
-                    self.game.network.connections[ip].stdin.flush()
+                self.game.network.send_message(msg, ip)
             except BrokenPipeError:
                 pass
 

@@ -51,7 +51,7 @@ class Game:
         self.network = Network(self)
         self.client = Client(self)
         self.player_id = dict()
-        self.own_id = 0
+        self.own_id = 10
 
     def check_events(self):
         "Checks for events in our game"

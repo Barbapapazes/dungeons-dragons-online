@@ -8,6 +8,7 @@ import threading
 from src.config.network import CLIENT_PATH, SERVER_PATH
 from src.utils.network import enqueue_output, get_ip, check_message
 from os import path
+import traceback
 
 
 class Network:
@@ -112,22 +113,23 @@ class Network:
             # if no exception is raised then line contains something
             line = line.decode("ascii")  # binary flux that we need to decode
             line = line[:-1]  # delete the final `\n`
+            split_line = line.split(" ")
 
             # first connection of a client
-            if line[:1] == "0":
+            if split_line[1] == "0":
                 self.new_connexion(line)
 
-            elif line[:1] == "2":
+            elif split_line[1] == "2":
                 self.new_ip(line)
 
-            elif line[:1] == "3":
+            elif split_line[1] == "3":
                 self.disconnect(line)
 
-            elif line[:1] == "4":
+            elif split_line[1] == "4":
                 self.change_id(line)
 
             # if a movement is sent
-            elif line[:1] == "5":
+            elif split_line[1] == "5":
                 self.move(line)
 
     def create_connection(self, line):
@@ -135,7 +137,7 @@ class Network:
         #     self.players[line[1]] = Player()
         line = line.split(" ")
         tmp = line[2].split(":")
-        if len(tmp) != 2:
+        if len(tmp) not in [2, 3]:
             return
         self.connections[line[2]] = subprocess.Popen(
             [CLIENT_PATH, tmp[0], tmp[1]],
@@ -162,46 +164,40 @@ class Network:
         Args:
             target_ip (str): string that contains the ip:port of the new connection
         """
+
         line = line.split(" ")
         target_ip = line[2]
         if len(self.game.player_id) > 0:
-            new_id = str(self.game.player_id[list(
-                self.game.player_id.keys())[-1]] + 1)
+            # get last id and add 1 to it
+            new_id = str(int(list(self.game.player_id.values())[-1]) + 1)
         else:
             new_id = str(self.game.own_id + 1)
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 "
-                      + target_ip + ":" + new_id + "\n")
+                      + target_ip + ":" + new_id)
             try:
                 check_message(msg)
             except ValueError:
                 print("message error")
                 return
-
-            for word in msg:
-                word = str.encode(word)
-                self.connections[target_ip].stdin.write(word)
-                self.connections[target_ip].stdin.flush()
+            self.send_message(msg, ip)
 
         for ip in self.client_ip_port:
             # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
-            msg = str(str(self.game.own_id) + " 2 " + ip + "\n")
+            msg = str(str(self.game.own_id) + " 2 " + ip)
             try:
                 check_message(msg)
             except ValueError:
                 print("message error")
                 return
-
-            for word in msg:
-                word = str.encode(word)
-                self.connections[target_ip].stdin.write(word)
-                self.connections[target_ip].stdin.flush()
+            self.send_message(msg, target_ip)
 
         msg = str(str(self.game.own_id) + " 4 "
-                  + new_id + "\n")
-
+                  + new_id)
+        self.send_message(msg, target_ip)
+        self.game.player_id[target_ip] = new_id
         # block that sends the position
         # msg = str("move " + ip + " " + str(self.players[ip].pos) + "\n")
         # msg = str.encode(msg)
@@ -229,6 +225,7 @@ class Network:
         # self.players[line[1]] = Player()
         self.create_connection(line)
         self.first_connection(line)
+
         try:
             client = self.get_client_from(line)
             self.add_to_clients(client)
@@ -244,6 +241,10 @@ class Network:
             line (str)
         """
         self.create_connection(line)
+        tmp = line.split(" ")[2].split(":")
+        id = tmp[2]
+        ip = tmp[0] + ":" + tmp[1]
+        self.game.player_id[ip] = id
         try:
             client = self.get_client_from(line)
             self.add_to_clients(client)
@@ -303,3 +304,12 @@ class Network:
         if len(line) == 1:
             raise Exception("Can't split the line")
         self.game.own_id = int(line[2])
+
+    def send_message(self, msg, ip):
+        msg = msg.replace("\n", "")
+        msg = msg.split(" ")
+        for word in msg:
+            word += '\n'
+            word = str.encode(word)
+            self.connections[ip].stdin.write(word)
+            self.connections[ip].stdin.flush()
