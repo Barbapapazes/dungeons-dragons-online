@@ -1,9 +1,10 @@
 """This file contains the Game class which is the central element of
 our game"""
-import queue
+
 import signal
 import sys
-import threading
+import atexit
+import traceback
 from os import path
 
 import pygame as pg
@@ -48,6 +49,7 @@ class Game:
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
 
+        # ----NETWORK---- #
         self.network = Network(self)
         self.client = Client(self)
         self.player_id = dict()

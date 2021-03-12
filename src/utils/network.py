@@ -36,4 +36,3 @@ def check_message(msg: str):
     msg = msg.split(" ")
     if len(msg) != 3:
         raise ValueError
-    return 0

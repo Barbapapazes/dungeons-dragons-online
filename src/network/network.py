@@ -110,21 +110,24 @@ class Network:
             return
         else:
             print(line)
-            # if no exception is raised then line contains something
+            # if no exception is raised it means that line contains something
             line = line.decode("ascii")  # binary flux that we need to decode
             line = line[:-1]  # delete the final `\n`
-            split_line = line.split(" ")
+            split_line = line.split(" ")  # separate the line string by word
 
             # first connection of a client
             if split_line[1] == "0":
                 self.new_connexion(line)
 
+            # ip data received
             elif split_line[1] == "2":
                 self.new_ip(line)
 
+            # a client has diconnected
             elif split_line[1] == "3":
                 self.disconnect(line)
 
+            # change the id of the current user (used at the first connexion)
             elif split_line[1] == "4":
                 self.change_id(line)
 
@@ -135,11 +138,11 @@ class Network:
     def create_connection(self, line):
         # if line[1] not in self.players:
         #     self.players[line[1]] = Player()
-        line = line.split(" ")
-        tmp = line[2].split(":")
+        line = self.get_data_from(line)
+        tmp = line.split(":")
         if len(tmp) not in [2, 3]:
             return
-        self.connections[line[2]] = subprocess.Popen(
+        self.connections[line] = subprocess.Popen(
             [CLIENT_PATH, tmp[0], tmp[1]],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -149,14 +152,14 @@ class Network:
         tmp_queue = queue.Queue()
         tmp_thread = threading.Thread(
             target=enqueue_output,
-            args=(self.connections[line[2]].stdout, tmp_queue),
+            args=(self.connections[line].stdout, tmp_queue),
         )
 
         # the thread will die with the end of the main procuss
         tmp_thread.daemon = True
         # thread is launched
         tmp_thread.start()
-        self.ping[line[2]] = (tmp_thread, tmp_queue)
+        self.ping[line] = (tmp_thread, tmp_queue)
 
     def first_connection(self, line):
         """Define what the program does when a new connection occurres
@@ -165,8 +168,7 @@ class Network:
             target_ip (str): string that contains the ip:port of the new connection
         """
 
-        line = line.split(" ")
-        target_ip = line[2]
+        target_ip = self.get_data_from(line)
         if len(self.game.player_id) > 0:
             # get last id and add 1 to it
             new_id = str(int(list(self.game.player_id.values())[-1]) + 1)
@@ -176,17 +178,19 @@ class Network:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 "
                       + target_ip + ":" + new_id)
+            print("ip message : ", msg)
             try:
                 check_message(msg)
             except ValueError:
                 print("message error")
-                return
+                break
             self.send_message(msg, ip)
 
         for ip in self.client_ip_port:
             # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
-            msg = str(str(self.game.own_id) + " 2 " + ip)
+            msg = str(str(self.game.own_id) + " 2 "
+                      + ip + ":" + self.game.player_id[ip])
             try:
                 check_message(msg)
             except ValueError:
@@ -198,23 +202,6 @@ class Network:
                   + new_id)
         self.send_message(msg, target_ip)
         self.game.player_id[target_ip] = new_id
-        # block that sends the position
-        # msg = str("move " + ip + " " + str(self.players[ip].pos) + "\n")
-        # msg = str.encode(msg)
-        # self.connections[target_ip].stdin.write(msg)
-        # self.connections[target_ip].stdin.flush()
-
-        # send the position of the main player
-        # msg = str(
-        #     "move "
-        #     + self.my_ip
-        #     + " "
-        #     + str(self.players[self.my_ip].pos)
-        #     + "\n"
-        # )
-        # msg = str.encode(msg)
-        # self.connections[target_ip].stdin.write(msg)
-        # self.connections[target_ip].stdin.flush()
 
     def new_connexion(self, line):
         """Handle a new connexion on the network
@@ -227,7 +214,7 @@ class Network:
         self.first_connection(line)
 
         try:
-            client = self.get_client_from(line)
+            client = self.get_data_from(line)
             self.add_to_clients(client)
         except Exception as e:
             print(e)
@@ -241,73 +228,108 @@ class Network:
             line (str)
         """
         self.create_connection(line)
-        tmp = line.split(" ")[2].split(":")
+        tmp = self.get_data_from(line).split(":")
         id = tmp[2]
         ip = tmp[0] + ":" + tmp[1]
         self.game.player_id[ip] = id
         try:
-            client = self.get_client_from(line)
+            client = self.get_data_from(line)
             self.add_to_clients(client)
         except Exception as e:
             print(e)
 
-    def move(self, line):
-        line = line.split(" ")
-        # position is separate in two different index so we concatenate them
-        tmp = line[2] + " " + line[3]
-        # transform the string into list of string
-        list_pos = tmp.strip("][").split(", ")
-        # transform the list of string into list of int
-        for cmpt in range(len(list_pos)):
-            list_pos[cmpt] = int(list_pos[cmpt])
-        # if players doesn't exist create it
-        #  if line[1] not in self.players:
-        # self.players[line[1]] = Player()
-        # add to the right player the associate position
-        self.game.players[line[1]].pos = list_pos
-
     def disconnect(self, line):
+        """handle a client disconnection :
+        remove the client ip from all the relative list and set
+        kill the associated processus (tcpclient)
+
+
+        Args:
+            line (str) : string that contains information
+        """
         try:
-            client = self.get_client_from(line)
+            client = self.get_data_from(line)
             self.remove_from_client(client)
             self.kill(client)
             self.remove_connexion(client)
         except Exception as e:
             print(e)
         # delete the player so it is not blit anymore
-        # del self.players[line[1]]
-        # delete his ip
 
     def add_to_clients(self, client):
+        """add the client to the set client_ip_port
+
+        Args:
+            client (string): ip:port
+        """
         self.client_ip_port.add(client)
 
     def remove_from_client(self, client):
+        """remofe the client from the set client_ip_port
+
+        Args:
+            client (string): ip:port
+        """
         self.client_ip_port.remove(client)
 
     def remove_connexion(self, client):
+        """Delete the two threads associated to the client from the connections and ping dictionnary
+
+        Args:
+            client (string): ip:port
+        """
         del self.connections[client]
         del self.ping[client]
 
     def kill(self, client):
+        """send SIGINT signal to all tcpclient processus associated to the client
+
+        Args:
+            client (string): ip:port
+        """
         pid = self.connections[client].pid
         os.kill(pid, signal.SIGINT)
 
     @staticmethod
-    def get_client_from(line):
+    def get_data_from(line):
+        """get data part of the packet
+
+        Args:
+            line (string): string of the packet
+
+        Raises:
+            Exception: if the packet is not normative
+
+        Returns:
+            string : data
+        """
         line = line.split(" ")
         if len(line) == 1:
             raise Exception("Can't split the line")
         return line[2]
 
     def change_id(self, line):
-        line = line.split(" ")
-        if len(line) == 1:
-            raise Exception("Can't split the line")
-        self.game.own_id = int(line[2])
+        """Change current client id by the one given in the packet
 
-    def send_message(self, msg, ip):
+        Args:
+            line (string) : packet
+        """
+        self.game.own_id = int(self.get_data_from(line))
+
+    def send_message(self, msg: str, ip: str):
+        """format message and send it to the ip
+
+        Args:
+            msg (string): packet
+            ip (string): recipient
+        """
+        try:
+            check_message(msg)
+        except ValueError:
+            return
         msg = msg.replace("\n", "")
         msg = msg.split(" ")
+        print("message :", msg, ip)
         for word in msg:
             word += '\n'
             word = str.encode(word)
