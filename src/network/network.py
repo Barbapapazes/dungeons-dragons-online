@@ -139,6 +139,7 @@ class Network:
         # if line[1] not in self.players:
         #     self.players[line[1]] = Player()
         line = self.get_data_from(line)
+        # data is of the form "ip:port:id"
         tmp = line.split(":")
         line = tmp[0] + ":" + tmp[1]
         if len(tmp) not in [2, 3]:
@@ -199,9 +200,11 @@ class Network:
                 return
             self.send_message(msg, target_ip)
 
+        # Send to the client his id and our ip:port (he will add it to his player_id dictionnary)
         msg = str(str(self.game.own_id) + " 4 "
                   + self.ip + ":" + str(self.port) + ":" + new_id)
         self.send_message(msg, target_ip)
+        # add to our player_id dictionnary his id
         self.game.player_id[target_ip] = new_id
 
     def new_connexion(self, line):
@@ -228,12 +231,12 @@ class Network:
         Args:
             line (str)
         """
+        # data is of the form "ip:port:id"
         self.create_connection(line)
         tmp = self.get_data_from(line).split(":")
         id = tmp[2]
         ip = tmp[0] + ":" + tmp[1]
         self.game.player_id[ip] = id
-        print(self.game.player_id)
         try:
             self.add_to_clients(ip)
         except Exception as e:

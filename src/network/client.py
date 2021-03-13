@@ -29,8 +29,7 @@ class Client:
             print("message error")
             return
 
-        tmp = self.game.network.client_ip_port.copy()
-        for ip in tmp:
+        for ip in self.game.network.client_ip_port:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             try:
 
@@ -47,8 +46,6 @@ class Client:
         time.sleep(0.5)
         # end the serv process (look for tcpserver to get more details)
         os.kill(self.game.network._server.pid, signal.SIGUSR1)
-        if len(self.game.network.connections) > 0:
+        for connections in self.game.network.connections.values():
             # end all the tcpclient process that are in connections dictionnary
-            values = self.game.network.connections.values()
-            iterator = iter(values)
-            os.kill(-os.getpgid(next(iterator).pid), signal.SIGUSR1)
+            os.kill(connections.pid, signal.SIGUSR1)
