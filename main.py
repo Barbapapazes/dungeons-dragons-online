@@ -9,5 +9,3 @@ g = Game()
 while g.running:
     g.current_menu.display_menu()
     g.game_loop()
-
-mymap = Map("src/maps/maptest/maptest.txt")
