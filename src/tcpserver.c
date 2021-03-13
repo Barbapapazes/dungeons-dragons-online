@@ -80,11 +80,10 @@ int main(int argc, char *argv[])
                     stop("recv()");
                 buffer[n] = '\0';
                 game_data = deserialize_packet((unsigned char *)buffer);
-                printf("%s\n", game_data.data);
                 sprintf(buffer, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
 
                 write(STDOUT_FILENO, buffer, strlen(buffer));
-                send(newsockfd, "1", 12, 0);
+                send(newsockfd, "1", 2, 0);
                 game_data = empty_game_packet;
             } while ((n = recv(newsockfd, buffer, BUFFSIZE, 0)) > 0); //write the message in STDOUT_FILENO
 

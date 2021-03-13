@@ -47,6 +47,8 @@ class Client:
         time.sleep(0.5)
         # end the serv process (look for tcpserver to get more details)
         os.kill(self.game.network._server.pid, signal.SIGUSR1)
-        for ip in self.game.network.connections:
+        if len(self.game.network.connections) > 0:
             # end all the tcpclient process that are in connections dictionnary
-            os.kill(self.game.network.connections[ip].pid, signal.SIGUSR1)
+            values = self.game.network.connections.values()
+            iterator = iter(values)
+            os.kill(-os.getpgid(next(iterator).pid), signal.SIGUSR1)

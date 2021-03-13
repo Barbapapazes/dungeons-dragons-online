@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
     timeout.tv_sec = 0.1;
     timeout.tv_usec = 0;
     game_packet game_data = {0, -1, ""}; // initialize a game_packet structure that will contain all the needed information
+    int packet_length = 0;
 
     if (sockfd < 0)
         stop("socket()");
@@ -127,9 +128,10 @@ int main(int argc, char *argv[])
             stop("getline()");
         game_data.data = strdup(stdin_read); //duplicate so the data won't have the same adress as stdin_read and we can modify it
         s_packet = serialize_packet(game_data);
+        packet_length = 3 * sizeof(int) + strlen(game_data.data); // check serialization for more details
 
-        gettimeofday(&ping_in, NULL);                              // get time in s and µs when the packet has been sent
-        if (send(sockfd, s_packet, sizeof(s_packet) * 4, 0) == -1) // send the message
+        gettimeofday(&ping_in, NULL);                       // get time in s and µs when the packet has been sent
+        if (send(sockfd, s_packet, packet_length, 0) == -1) // send the message
             stop("send()");
 
         if (recv(sockfd, buffer, 12, 0) == -1) //wait for a server response

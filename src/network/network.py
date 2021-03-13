@@ -140,6 +140,7 @@ class Network:
         #     self.players[line[1]] = Player()
         line = self.get_data_from(line)
         tmp = line.split(":")
+        line = tmp[0] + ":" + tmp[1]
         if len(tmp) not in [2, 3]:
             return
         self.connections[line] = subprocess.Popen(
@@ -199,7 +200,7 @@ class Network:
             self.send_message(msg, target_ip)
 
         msg = str(str(self.game.own_id) + " 4 "
-                  + new_id)
+                  + self.ip + ":" + str(self.port) + ":" + new_id)
         self.send_message(msg, target_ip)
         self.game.player_id[target_ip] = new_id
 
@@ -232,9 +233,9 @@ class Network:
         id = tmp[2]
         ip = tmp[0] + ":" + tmp[1]
         self.game.player_id[ip] = id
+        print(self.game.player_id)
         try:
-            client = self.get_data_from(line)
-            self.add_to_clients(client)
+            self.add_to_clients(ip)
         except Exception as e:
             print(e)
 
@@ -314,7 +315,11 @@ class Network:
         Args:
             line (string) : packet
         """
-        self.game.own_id = int(self.get_data_from(line))
+        tmp = self.get_data_from(line).split(":")
+        ip = tmp[0] + ":" + tmp[1]
+        host_id = tmp[2]
+        self.game.player_id[ip] = line.split(" ")[0]
+        self.game.own_id = int(host_id)
 
     def send_message(self, msg: str, ip: str):
         """format message and send it to the ip
