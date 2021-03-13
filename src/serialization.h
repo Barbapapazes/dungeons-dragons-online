@@ -21,7 +21,7 @@ typedef struct
  * @param g the game packet we want to serialize
  * @return char* the serialized bytes array
  */
-char *serialize_packet(game_packet g);
+unsigned char *serialize_packet(game_packet g);
 
 /**
  * @brief Transforms a serialized packet back to a structure

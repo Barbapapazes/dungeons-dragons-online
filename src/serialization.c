@@ -11,14 +11,14 @@
 #include <netinet/tcp.h>
 #include "serialization.h"
 
-char *serialize_packet(game_packet g)
+unsigned char *serialize_packet(game_packet g)
 {
     //Calculating data length to define our packet size
     int data_len = strlen(g.data);
     int packet_size = 3 * sizeof(int) + data_len * sizeof(char);
 
-    char *s_packet;
-    s_packet = malloc(sizeof(char) * (packet_size + 1));
+    unsigned char *s_packet;
+    s_packet = malloc(sizeof(unsigned char) * (packet_size + 1));
 
     //First two integers
     memcpy(s_packet, &g.player_id, sizeof(int));
