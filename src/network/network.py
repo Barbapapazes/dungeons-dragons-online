@@ -6,7 +6,7 @@ import signal
 import time
 import threading
 from src.config.network import CLIENT_PATH, SERVER_PATH
-from src.utils.network import enqueue_output, get_ip, check_message
+from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet
 from os import path
 import traceback
 
@@ -99,21 +99,24 @@ class Network:
             except queue.Empty:
                 pass
             else:
+                # binary flux that we need to decode before manipulate it
                 line = line.decode("ascii")
-                line = line[:-1]
+                line = line[:-1]  # delete the final `\n`
                 print(key + " " + line)
 
         try:
             # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
+            # queue.get() method is BLOCKING if timeout arg is not specified or is 0
             line = self.q.get(timeout=0.001)
         except queue.Empty:
             return
         else:
             print(line)
             # if no exception is raised it means that line contains something
-            line = line.decode("ascii")  # binary flux that we need to decode
+            # binary flux that we need to decode before manipulate it
+            line = line.decode("ascii")
             line = line[:-1]  # delete the final `\n`
-            split_line = line.split(" ")  # separate the line string by word
+            split_line = line.split(" ")  # separate the line's string by word
 
             # first connection of a client
             if split_line[1] == "0":
@@ -138,14 +141,13 @@ class Network:
     def create_connection(self, line):
         # if line[1] not in self.players:
         #     self.players[line[1]] = Player()
-        line = self.get_data_from(line)
+        ip = get_ip_from_packet(line)
         # data is of the form "ip:port:id"
-        tmp = line.split(":")
-        line = tmp[0] + ":" + tmp[1]
-        if len(tmp) not in [2, 3]:
+        ip_array = ip.split(":")
+        if len(ip_array) not in [2, 3]:
             return
-        self.connections[line] = subprocess.Popen(
-            [CLIENT_PATH, tmp[0], tmp[1]],
+        self.connections[ip] = subprocess.Popen(
+            [CLIENT_PATH, ip_array[0], ip_array[1]],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -154,14 +156,14 @@ class Network:
         tmp_queue = queue.Queue()
         tmp_thread = threading.Thread(
             target=enqueue_output,
-            args=(self.connections[line].stdout, tmp_queue),
+            args=(self.connections[ip].stdout, tmp_queue),
         )
 
         # the thread will die with the end of the main procuss
         tmp_thread.daemon = True
         # thread is launched
         tmp_thread.start()
-        self.ping[line] = (tmp_thread, tmp_queue)
+        self.ping[ip] = (tmp_thread, tmp_queue)
 
     def first_connection(self, line):
         """Define what the program does when a new connection occurres
@@ -180,11 +182,6 @@ class Network:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 "
                       + target_ip + ":" + new_id)
-            try:
-                check_message(msg)
-            except ValueError:
-                print("message error")
-                break
             self.send_message(msg, ip)
 
         for ip in self.client_ip_port:
@@ -192,11 +189,6 @@ class Network:
             # block that sends the ip
             msg = str(str(self.game.own_id) + " 2 "
                       + ip + ":" + self.game.player_id[ip])
-            try:
-                check_message(msg)
-            except ValueError:
-                print("message error")
-                return
             self.send_message(msg, target_ip)
 
         # Send to the client his id and our ip:port (he will add it to his player_id dictionnary)
@@ -220,7 +212,7 @@ class Network:
             client = self.get_data_from(line)
             self.add_to_clients(client)
         except Exception as e:
-            print(e)
+            print("Error new connexion", e)
         # add the new ip to the client_ip_port set
 
     def new_ip(self, line):
@@ -232,14 +224,13 @@ class Network:
         """
         # data is of the form "ip:port:id"
         self.create_connection(line)
-        tmp = self.get_data_from(line).split(":")
-        id = tmp[2]
-        ip = tmp[0] + ":" + tmp[1]
+        id = get_id_from_packet(line)
+        ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
         try:
             self.add_to_clients(ip)
         except Exception as e:
-            print(e)
+            print("Error new ip", e)
 
     def disconnect(self, line):
         """handle a client disconnection :
@@ -256,7 +247,7 @@ class Network:
             self.kill(client)
             self.remove_connexion(client)
         except Exception as e:
-            print(e)
+            print("Error disconnect", e)
         # delete the player so it is not blit anymore
 
     def add_to_clients(self, client):
@@ -317,9 +308,8 @@ class Network:
         Args:
             line (string) : packet
         """
-        tmp = self.get_data_from(line).split(":")
-        ip = tmp[0] + ":" + tmp[1]
-        host_id = tmp[2]
+        ip = get_ip_from_packet(line)
+        host_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(host_id)
 
