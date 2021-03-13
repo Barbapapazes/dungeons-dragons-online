@@ -129,7 +129,6 @@ class MenuJoin(Menu):
             tmp_thread.start()
             print(client_ip)
             self.game.network.ping[client_ip] = (tmp_thread, tmp_queue)
-            print("connection ")
 
     def display_menu(self):
         """Displays the menu on our screen"""

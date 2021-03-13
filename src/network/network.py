@@ -180,7 +180,6 @@ class Network:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 "
                       + target_ip + ":" + new_id)
-            print("ip message : ", msg)
             try:
                 check_message(msg)
             except ValueError:
@@ -337,7 +336,6 @@ class Network:
             return
         msg = msg.replace("\n", "")
         msg = msg.split(" ")
-        print("message :", msg, ip)
         for word in msg:
             word += '\n'
             word = str.encode(word)
