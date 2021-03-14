@@ -3,7 +3,10 @@ import queue
 import subprocess
 import threading
 import time
+import os
+import signal
 from os import path
+
 
 import pygame as pg
 from src.config.assets import fonts_folder, menus_folder
@@ -97,6 +100,8 @@ class MenuJoin(Menu):
             self.displaying = False
             self.game.menu_running = False
             self.game.playing = True
+            # unpause the server
+            os.kill(self.game.network._server.pid, signal.SIGUSR2)
             self.game.network.client_ip_port.add(client_ip)
             # split the ip:port to obtains ip and port
             tmp = client_ip.split(":")

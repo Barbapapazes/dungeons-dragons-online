@@ -5,6 +5,7 @@ import signal
 import sys
 import atexit
 import traceback
+import os
 from os import path
 
 import pygame as pg

@@ -218,7 +218,6 @@ class Network:
     def new_ip(self, line):
         """Add a new ip to the set
 
-
         Args:
             line (str)
         """

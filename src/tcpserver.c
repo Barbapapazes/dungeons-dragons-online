@@ -26,6 +26,15 @@ void stop(char *msg)
 }
 
 /**
+ * @brief Does nothing, used to unpause
+ * 
+ */
+void activation(int signum)
+{
+    return;
+}
+
+/**
  * @brief end the program and avoid orphans children
  * 
  */
@@ -39,6 +48,7 @@ void end(int signum)
 int main(int argc, char *argv[])
 {
     signal(SIGUSR1, &end); // if SIGUSR1 is received execute end function
+    signal(SIGUSR2, &activation);
 
     char buffer[BUFFSIZE]; //Buffer of 8192 char
     int n;                 //counter of char received
@@ -72,14 +82,17 @@ int main(int argc, char *argv[])
     // set server port
     serv_addr.sin_port = htons(atoi(argv[1]));
 
-    // avoid the bind error by allowing re-use of the same port for the socket
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int));
-
     // associate to sockfd serv_addr
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1)
         stop("bind()");
 
-    // allows to queue up to 20000 connexions to the server
+    // wait for an activation
+    pause();
+
+    // avoid the bind error by allowing re-use of the same port for the socket
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int));
+
+    // allows to queue up to 2000 connexions to the server
     if (listen(sockfd, 2000) == -1)
         stop("listen()");
 
