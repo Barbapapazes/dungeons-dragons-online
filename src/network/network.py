@@ -5,7 +5,7 @@ import queue
 import signal
 import time
 import threading
-from src.config.network import CLIENT_PATH, SERVER_PATH
+from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE
 from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet
 from os import path
 import traceback
@@ -119,23 +119,23 @@ class Network:
             action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
-            if action == "0":
+            if action == FIRST_CONNECTION:
                 self.new_connexion(line)
 
             # ip data received
-            elif action == "2":
+            elif action == NEW_IP:
                 self.new_ip(line)
 
             # a client has diconnected
-            elif action == "3":
+            elif action == DISCONNECT:
                 self.disconnect(line)
 
             # change the id of the current user (used at the first connexion)
-            elif action == "4":
+            elif action == CHANGE_ID:
                 self.change_id(line)
 
             # if a movement is sent
-            elif action == "5":
+            elif action == MOVE:
                 self.move(line)
 
     def create_connection(self, line):
