@@ -110,15 +110,7 @@ class MenuJoin(Menu):
             # encode in binary a message that contains : first + client ip:port
             msg = str(str(self.game.own_id) + " 0 " + str(self.game.network.ip)
                       + ":" + str(self.game.network.port))
-            msg = msg.split()
-            if len(msg) != 3:
-                raise ValueError
-            for word in msg:
-                word += '\n'
-                word = str.encode(word)
-                # write the encoded message on stdin then flush it to avoid conflict
-                self.game.network.connections[client_ip].stdin.write(word)
-                self.game.network.connections[client_ip].stdin.flush()
+            self.game.network.send_message(msg, client_ip)
 
             # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
             tmp_queue = queue.Queue()
