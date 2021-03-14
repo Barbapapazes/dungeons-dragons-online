@@ -116,26 +116,26 @@ class Network:
             # binary flux that we need to decode before manipulate it
             line = line.decode("ascii")
             line = line[:-1]  # delete the final `\n`
-            split_line = line.split(" ")  # separate the line's string by word
+            action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
-            if split_line[1] == "0":
+            if action == "0":
                 self.new_connexion(line)
 
             # ip data received
-            elif split_line[1] == "2":
+            elif action == "2":
                 self.new_ip(line)
 
             # a client has diconnected
-            elif split_line[1] == "3":
+            elif action == "3":
                 self.disconnect(line)
 
             # change the id of the current user (used at the first connexion)
-            elif split_line[1] == "4":
+            elif action == "4":
                 self.change_id(line)
 
             # if a movement is sent
-            elif split_line[1] == "5":
+            elif action == "5":
                 self.move(line)
 
     def create_connection(self, line):
@@ -300,6 +300,24 @@ class Network:
         if len(line) == 1:
             raise Exception("Can't split the line")
         return line[2]
+
+    @staticmethod
+    def get_action_from(line):
+        """get action part of the packet
+
+        Args:
+            line (string): string of the packet
+
+        Raises:
+            Exception: if the packet is not normative
+
+        Returns:
+            string : action
+        """
+        line = line.split(" ")
+        if len(line) == 1:
+            raise Exception("Can't split the line")
+        return line[1]
 
     def change_id(self, line):
         """Change current client id by the one given in the packet

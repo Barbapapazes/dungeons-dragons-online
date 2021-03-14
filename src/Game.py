@@ -3,17 +3,12 @@ our game"""
 
 import signal
 import sys
-import atexit
-import traceback
-import os
 from os import path
 
 import pygame as pg
 
 from src.config.assets import menus_folder
 from src.network import Client, Network
-from src.utils.network import enqueue_output
-
 from .menu import MenuCharacter, MenuJoin, MenuMain
 
 
