@@ -11,8 +11,7 @@ from src.network import Client, Network
 from src.Map import Map
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
-from .Settings import RESOLUTION
-
+from src.config.window import RESOLUTION
 
 class Game:
     """The game class"""
