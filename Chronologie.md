@@ -12,13 +12,19 @@ _Ce fichier a pour but de résumer la chronologie de notre projet, et comment no
         * Un drive pour stocker les fichiers de réflexion, les comptes-rendus de nos réunions personnelles et les choses importantes
         * Un plan d'action, qui est un fichier EXCEL sous forme de tableau qui nous permet de nous organiser, de noter qui fait quoi et quand est-ce que la tâche sera finie 
 
+    <br/>
+
+    ![Le plan d'action](plan_action.png)
+
+    <br/>
+
 * **Notre approche du projet** :
     * Pour travailler sur ce projet nous pensions que le plus simple était de travaiiler d'abord sur des programmes minimaux, réduit à une seule fonctionnalité, puis d'incrémenter sur ces programmes pour rajouter des fonctionnalités
     * Nous avons donc créé beaucoup de petits programmes qui se trouvent dans le dossier `poc/` pour tester diverses choses : les performances des protocoles, la sérialisation, une version très minimale d'un jeu auquel on peut connecter plusieurs joueurs, des méthodes pour faire transiter les données entre Python et C, etc.
 
 <br/> 
 
-## 1 Février --> 7 Février 
+## 1 Février - 7 Février 
     
 * Création du repository sur Github et paramétrage de ce dernier 
 
@@ -31,7 +37,7 @@ _Ce fichier a pour but de résumer la chronologie de notre projet, et comment no
 * Petit jeu minimal, avec 2 joueurs qui peuvent se connecter (on peut faire bouger des carrés)
     * Plus d'informations sur le programme dans le dossier `poc/pygame-tcp`
     
-## 8 Février --> 14 Février 
+## 8 Février - 14 Février 
 
 * Améliorations du petit jeu pour avoir plus de 2 joueurs
     * Plus d'informations dans le dossier `poc/pygame-tcp-multi`
@@ -43,27 +49,33 @@ _Ce fichier a pour but de résumer la chronologie de notre projet, et comment no
 
 * Ajout d'une version du petit jeu avec des threads 
 
-## 15 Février --> 21 Février 
+## 15 Février - 21 Février 
 
 * Création de la base du vrai jeu, en python : on a une fenêtre, des menus pour se connecter au jeu 
+  
+    <br/>
+
+    ![Première interface du jeu](menu_jeu.png)
+
+    <br/>
 
 * Création d'un petit programme pour tester les instances de combat, pour réfléchir à l'adaptation de ces derniers 
 
-## 22 Février --> 28 Février 
+## 22 Février - 28 Février 
 
 * Détection et affichage de la latence en jeu dans la console, pour voir les performances du jeu 
 
-## 1er Mars --> 7 Mars 
+## 1er Mars - 7 Mars 
 
 * Ajout de la sérialisation dans les fichiers du jeu et définition des normes des structures que l'on va envoyer, afin d'avoir des paquets standardisés 
 
 * Re-structuration de l'architecture du jeu pour que le tout soit propre et bien séparé en fonctionnalités 
 
-## 8 Mars --> 14 Mars 
+## 8 Mars - 14 Mars 
 
 * Ajout de la map (carte sur laquelle les joueurs se déplacent) dans le jeu, limité à une carte unique pour simplifier (c'est toujours sur la même carte que les joueurs vont jouer)
 
-## 15 Mars --> 21 Mars 
+## 15 Mars - 21 Mars 
 
 * Intégration totale de la sérialisation dans le jeu et travail sur l'ajout du personnage et des interfaces dans le jeu 
 
