@@ -58,6 +58,9 @@ class Game:
         # ----INGAME MENUS---- #
         self.character_status = CharacterStatus(self)
 
+        # ----INGAME MENUS---- #
+        self.character_status = CharacterStatus(self)
+
         # ----CHAT---- #
         self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
 
@@ -112,6 +115,7 @@ class Game:
             self.player.move()
             self.player.draw(self.display)
             self.chat.draw(self.display)
+            self.world_map.draw(self.display, 5, 5)
             self.character_status.draw()
             self.check_events()
             self.update_screen()
