@@ -13,7 +13,7 @@ from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
 from src.config.colors import BLACK, WHITE
 from src.UI.chat import Chat
-
+from src.ingame_menus import CharacterStatus
 
 class Game:
     """The game class"""
@@ -50,6 +50,9 @@ class Game:
         self.character_menu = MenuCharacter(self)
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
+        
+        # ----INGAME MENUS---- #
+        self.character_status = CharacterStatus(self)
 
         # ----CHAT---- #
         self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
@@ -59,7 +62,7 @@ class Game:
         self.client = Client(self)
         self.player_id = dict()
         self.own_id = 10
-
+    
     def check_events(self):
         "Checks for events in our game"
         for event in pg.event.get():
@@ -69,8 +72,11 @@ class Game:
                 self.current_menu.check_events(event)
             if self.playing:
                 self.chat.event_handler(event)
-                # Here we are checking inputs when the game is in the "playing" state
-                pass
+                if event.type == pg.KEYDOWN:
+                    #If we press tab, display the character status menu 
+                    if event.key == pg.K_TAB:
+                        self.character_status.display = True
+                        
 
     def change_player(self):
         """The function to switch the current character in the game"""
@@ -96,7 +102,8 @@ class Game:
             self.display.fill((0, 0, 0))
             self.world_map.draw(self.display, 5, 5)
             self.chat.draw(self.display)
-            self.update_screen()
+            self.character_status.draw()
             self.check_events()
+            self.update_screen()
             self.clock.tick(30)
             self.network.server()

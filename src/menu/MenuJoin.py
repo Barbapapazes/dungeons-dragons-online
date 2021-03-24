@@ -31,11 +31,11 @@ class MenuJoin(Menu):
             self.game,
             self.game.resolution[0] // 2,
             self.game.resolution[1] // 2,
-            200,
+            400,
             50,
-            path.join(fonts_folder, "enchanted_land.otf"),
+            path.join(fonts_folder, "alegreya.ttf"),
             32,
-            20,
+            25,
         )
 
         self.return_button = Button(
