@@ -9,9 +9,11 @@ import pygame as pg
 from src.config.assets import menus_folder
 from src.network import Client, Network
 from src.Map import Map
+from src.Player import Player
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
+
 
 class Game:
     """The game class"""
@@ -43,6 +45,8 @@ class Game:
 
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
+        # ------PLAYER----- #
+        self.player = Player(self.world_map)
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)
@@ -60,8 +64,7 @@ class Game:
             if self.menu_running:
                 self.current_menu.check_events(event)
             if self.playing:
-                # Here we are checking inputs when the game is in the "playing" state
-                pass
+                self.player.handle_event()
 
     def change_player(self):
         """The function to switch the current character in the game"""
@@ -85,7 +88,8 @@ class Game:
         """The loop of the game"""
         while self.playing:
             self.display.fill((0, 0, 0))
-            self.world_map.draw(self.display, 5, 5)
+            self.world_map.draw(self.display)
+            self.player.draw(self.display)
             self.update_screen()
             self.check_events()
             self.clock.tick(30)
