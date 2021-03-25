@@ -9,7 +9,7 @@ class Client:
     def __init__(self, game):
         self.game = game
 
-    def send(self, msg=None):
+    def send(self, msg=None, chat=False):
         """Create a subprocess that will send the position to the local server with client_ip_port
 
 
@@ -22,18 +22,20 @@ class Client:
         if msg is None:
             # If no message is specified then we send the position of the client
             msg = "0 0 0"
+        if not chat:
+            try:
+                check_message(msg)
+            except ValueError:
+                print("message error")
+                return
 
-        try:
-            check_message(msg)
-        except ValueError:
-            print("message error")
-            return
+        print("client send : ", msg)
 
         for ip in self.game.network.client_ip_port:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
             try:
 
-                self.game.network.send_message(msg, ip)
+                self.game.network.send_message(msg, ip, chat)
             except BrokenPipeError:
                 pass
 

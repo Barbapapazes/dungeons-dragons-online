@@ -1,6 +1,6 @@
 """Module that contains the Log class"""
 import pygame as pg
-from src.config.colors import GREY
+from src.config.colors import GREY, WHITE
 
 
 class Log:
@@ -22,15 +22,17 @@ class Log:
         self.font_size = size
         self.font = pg.font.SysFont("Cascadia code", size)
         self.log_list = []
-        self.background = pg.Surface((self.width, self.height), pg.SRCALPHA, 32)
+        self.background = pg.Surface(
+            (self.width, self.height), pg.SRCALPHA, 32)
         self.rect = pg.Rect(*position, width, height)
         self.scroll = 0
         self.line_cpt = 0
         self.update = True
 
-    def add_log(self, new_log, title=False):
+    def add_log(self, new_log, color=WHITE, title=False):
         """# function to add new log in form of a list of tuple
         # example: log.add_log([("Player", "Attack zombie"), ("Zombie", "Attack Player")])"""
+        self.text_color = color
         self.update = True
         self.log_list.append([new_log, title])
 
@@ -40,7 +42,8 @@ class Log:
             self.update = False
             self.background.fill(GREY)
         else:
-            self.background = pg.Surface((self.width, self.height), pg.SRCALPHA, 32)
+            self.background = pg.Surface(
+                (self.width, self.height), pg.SRCALPHA, 32)
         self.line_cpt = 0
         i = 1
         while (
@@ -67,14 +70,16 @@ class Log:
                 else:
                     text = self.font.render(line[j][0], True, self.text_color)
                 if self.quest:
-                    self.background.blit(text, (5, (j - self.scroll) * self.font_size))
+                    self.background.blit(
+                        text, (5, (j - self.scroll) * self.font_size))
                 else:
                     self.background.blit(
                         text,
                         (
                             5,
                             self.height
-                            - ((self.line_cpt - self.scroll) - j) * self.font_size,
+                            - ((self.line_cpt - self.scroll) - j)
+                            * self.font_size,
                         ),
                     )
 

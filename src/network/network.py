@@ -111,7 +111,6 @@ class Network:
         except queue.Empty:
             return
         else:
-            print(line)
             # if no exception is raised it means that line contains something
             # binary flux that we need to decode before manipulate it
             line = line.decode("ascii")
@@ -137,6 +136,10 @@ class Network:
             # if a movement is sent
             elif action == MOVE:
                 self.move(line)
+
+            elif action == "8":
+                print("is in action 8")
+                self.chat_message(line)
 
     def create_connection(self, line):
         # if line[1] not in self.players:
@@ -330,21 +333,43 @@ class Network:
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(host_id)
 
-    def send_message(self, msg: str, ip: str):
+    def chat_message(self, line):
+        my_message = self.get_data_from(line)
+        print("my message : ", my_message)
+        self.game.chat.receive_chat(my_message)
+
+    def send_message(self, msg: str, ip: str, chat=False):
         """format message and send it to the ip
 
         Args:
             msg (string): packet
             ip (string): recipient
         """
-        try:
-            check_message(msg)
-        except ValueError:
-            return
         msg = msg.replace("\n", "")
-        msg = msg.split(" ")
-        for word in msg:
-            word += '\n'
-            word = str.encode(word)
-            self.connections[ip].stdin.write(word)
-            self.connections[ip].stdin.flush()
+        print("test 1 send message", chat)
+        if not chat:
+            try:
+                check_message(msg)
+            except ValueError:
+                return
+
+            msg = msg.split(" ")
+
+            for word in msg:
+                word += '\n'
+                word = str.encode(word)
+                self.connections[ip].stdin.write(word)
+                self.connections[ip].stdin.flush()
+        if(chat):
+            msg = msg.split(" ")
+            mylist = [msg[0], msg[1]]
+            my_str = ""
+            for i in range(2, len(msg)):
+                my_str += msg[i] + " "
+            mylist.append(my_str)
+            print("mylist : ", mylist)
+            for word in mylist:
+                word += '\n'
+                word = str.encode(word)
+                self.connections[ip].stdin.write(word)
+                self.connections[ip].stdin.flush()
