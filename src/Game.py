@@ -13,6 +13,7 @@ from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
 
+
 class Game:
     """The game class"""
 
@@ -90,6 +91,7 @@ class Game:
         while self.playing:
             self.display.fill((0, 0, 0))
             self.world_map.draw(self.display)
+            self.world_map.draw_mini(self.display)
             self.player.draw(self.display)
             self.update_screen()
             self.check_events()

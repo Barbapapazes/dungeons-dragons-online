@@ -1,4 +1,5 @@
 from src.config.window import TILE_SIZE, RESOLUTION
+from src.config.colors import DARKBROWN
 import pygame as pg
 from random import randint
 
@@ -53,46 +54,6 @@ class Tile:
         self.discovered = True
 
 
-"""
-class Doors:
-    "Define doors (portals) in maps"
-
-    def __init__(self, side1, map1, side2, map2):
-        self.side1 = side1  # coordonate of a side of the door in tiles
-        self.map1 = map1  # map of a side of a door
-        self.side2 = side2  # coordonate of a side of the other door in tiles
-        self.map2 = map2  # map of the otehr side of the other door
-
-    def is_inside(self, mapid, x, y, mx, my, player_list, map):
-        "check if a player is inside the door and clicking on it. If so switch the map"
-        # check side 1
-        if mapid == self.map1 and all(
-            (self.side1[0] * TILE_SIZE <= px < (self.side1[0] + 1) * TILE_SIZE)
-            and (
-                self.side1[1] * TILE_SIZE
-                <= py
-                < (self.side1[1] + 1) * TILE_SIZE
-            )
-            for px, py in [[x, y], [mx, my]]
-        ):
-            map.switch(self.map2, self.side2, player_list)
-            return True
-        # check the side 2
-        if mapid == self.map2 and all(
-            (self.side2[0] * TILE_SIZE <= px < (self.side2[0] + 1) * TILE_SIZE)
-            and (
-                self.side2[1] * TILE_SIZE
-                <= py
-                < (self.side2[1] + 1) * TILE_SIZE
-            )
-            for px, py in [[x, y], [mx, my]]
-        ):
-            map.switch(self.map1, self.side1, player_list)
-            return True
-        return False
-"""
-
-
 class Map:
     "Define maps for the current game"
 
@@ -103,7 +64,7 @@ class Map:
         self.name = map_lines[0][:-1]
         # Note : self.map contain all map sorted as [dungeon number][floor number][Y][X]
         # X is the position in the Y line
-        main_map = [
+        self.map = [
             [
                 Tile(map_lines[lineY][placeX])
                 for placeX in range(len(map_lines[lineY][:-1]))
@@ -116,22 +77,39 @@ class Map:
             for i in range(-12, 0, 2)
         ]
         self.centered_in = [0, 0]  # X and Y where is centered
-        self.map = main_map
         ### Setting minimap ###
-        # Not done yet
-        self.init_views()
+        minimap_reduction = 8
+        s_width, s_height = RESOLUTION
+        self.minimap_size = s_width // minimap_reduction, s_height // minimap_reduction
 
-    def init_views(self):
+        self.minimap = pg.Surface(self.minimap_size, minimap_reduction)
+
+        ###Setting canvas###
+        self.init_views(self.minimap_size, minimap_reduction)
+
+    def init_views(self, mini_size, mini_coeff):
         """Init array of every surface to blit on the screen (tiles & vision)"""
         lenX, lenY = len(self.map[0]), len(self.map)
         display = pg.Surface((lenX * TILE_SIZE, lenY * TILE_SIZE))
+        self.mini_tile_s = TILE_SIZE // mini_coeff
+        mini_display = pg.Surface(
+            (lenX * self.mini_tile_s, lenY * self.mini_tile_s))
         for tileY in range(lenY):
             for tileX in range(lenX):
                 display.blit(
                     self.map[tileY][tileX].image,
                     (tileX * TILE_SIZE, tileY * TILE_SIZE),
                 )
+                ### Minimap ###
+                # Transform image in a mini image
+                mini_img = pg.Surface.copy(self.map[tileY][tileX].image)
+                pg.transform.scale(
+                    mini_img, (self.mini_tile_s, self.mini_tile_s))
+
+                mini_display.blit(
+                    mini_img, (tileX * self.mini_tile_s, tileY * self.mini_tile_s))
         self.map_canva = display
+        self.mini_canva = mini_display
         # self.mini_canva_list = []
         # add view list here
 
@@ -143,3 +121,11 @@ class Map:
             (-self.centered_in[0] * TILE_SIZE
              + s_width / 2, -self.centered_in[1] * TILE_SIZE + s_height / 2),
         )  # display the carpet at the right place
+
+    def draw_mini(self, display):
+        "Display a minimap"
+        s_width, s_height = RESOLUTION
+        self.minimap.fill(DARKBROWN)
+        self.minimap.blit(self.mini_canva, (-self.centered_in[0] * self.mini_tile_s
+                                            + self.minimap_size[0] / 2, -self.centered_in[1] * self.mini_tile_s + self.minimap_size[1] / 2))
+        display.blit(self.minimap, (s_width - self.minimap_size[0] - 4, 4))
