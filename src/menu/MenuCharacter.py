@@ -1,5 +1,6 @@
 """Character menu"""
-
+import os
+import signal
 from src.menu._menu import Menu
 from src.interface import Button
 from src.config.assets import fonts_folder, menus_folder
@@ -61,6 +62,8 @@ class MenuCharacter(Menu):
         if self.play_button.is_clicked(event):
             self.game.menu_running = False
             self.game.playing = True
+            # unpause the server
+            os.kill(self.game.network._server.pid, signal.SIGUSR2)
             self.displaying = False
         if self.join_button.is_clicked(event):
             self.game.current_menu = self.game.join_menu

@@ -30,3 +30,53 @@ def enqueue_output(out, queue_line):
     """
     for line in iter(out.readline, b""):
         queue_line.put(line)
+
+
+def check_message(msg: str):
+    msg = msg.split(" ")
+    if len(msg) != 3:
+        raise ValueError
+
+
+def get_id_from_packet(msg: str):
+    """get the id stored in the packet ("ip:port:id")
+
+    Args:
+        msg (str): packet
+
+    Raises:
+        ValueError: Packet has more or less than 3 words
+        ValueError: Data is not of the right shape
+
+    Returns:
+        str: id
+    """
+    msg = msg.split(" ")
+    if len(msg) != 3:
+        raise ValueError
+    msg = msg[2].split(":")
+    if len(msg) != 3:
+        raise ValueError
+    return msg[2]
+
+
+def get_ip_from_packet(msg: str):
+    """get the ip:port stored in the packet ("ip:port:id")
+
+    Args:
+        msg (str): packet
+
+    Raises:
+        ValueError: Packet has more or less than 3 words
+        ValueError: Data is not of the right shape
+
+    Returns:
+        str: ip:port
+    """
+    msg = msg.split(" ")
+    if len(msg) != 3:
+        raise ValueError
+    msg = msg[2].split(":")
+    if len(msg) < 2:
+        raise ValueError
+    return msg[0] + ":" + msg[1]

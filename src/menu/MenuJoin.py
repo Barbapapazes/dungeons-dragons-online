@@ -3,7 +3,10 @@ import queue
 import subprocess
 import threading
 import time
+import os
+import signal
 from os import path
+
 
 import pygame as pg
 from src.config.assets import fonts_folder, menus_folder
@@ -97,23 +100,24 @@ class MenuJoin(Menu):
             self.displaying = False
             self.game.menu_running = False
             self.game.playing = True
+            # unpause the server
+            os.kill(self.game.network._server.pid, signal.SIGUSR2)
             self.game.network.client_ip_port.add(client_ip)
             # split the ip:port to obtains ip and port
             tmp = client_ip.split(":")
             # initialize a connection to ip contained in sys.argv[2]
             self.game.network.connections[client_ip] = tmp_proc
             # encode in binary a message that contains : first + client ip:port
-            msg = str("first " + str(self.game.network.ip) + ":" + str(self.game.network.port) + "\n")
-            msg = str.encode(msg)
-            # write the encoded message on stdin then flush it to avoid conflict
-            self.game.network.connections[client_ip].stdin.write(msg)
-            self.game.network.connections[client_ip].stdin.flush()
+            msg = str(str(self.game.own_id) + " 0 " + str(self.game.network.ip)
+                      + ":" + str(self.game.network.port))
+            self.game.network.send_message(msg, client_ip)
 
             # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
             tmp_queue = queue.Queue()
             tmp_thread = threading.Thread(
                 target=enqueue_output,
-                args=(self.game.network.connections[client_ip].stdout, tmp_queue),
+                args=(
+                    self.game.network.connections[client_ip].stdout, tmp_queue),
             )
 
             # the thread will die with the end of the main procus

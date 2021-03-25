@@ -39,7 +39,7 @@ src: $(SRC_SRCS)
 	@echo Create $(SRC_SRCS)
 
 $(SRC_SRCS): %: %.c
-	@$(CC) $(CFLAGS) -o $@ $<
+	@$(CC) $(CFLAGS) src/serialization.c -o $@ $<
 
 $(POC_SRCS): %: %.c
 	@$(CC) $(CFLAGS) -o $@ $<

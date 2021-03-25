@@ -1,6 +1,5 @@
 #ifndef SERIALIZATION
-#define SERIALIZATION 
-
+#define SERIALIZATION
 
 /**
  * @brief Game packet structure with (more details on usage at the end of file):
@@ -8,11 +7,11 @@
  * action : the action the player did (see here for more informations : shorturl.at/kAGN7)
  * data : string containing action, semicolon separated
  */
-typedef struct 
+typedef struct
 {
     int player_id;
     int action;
-    char* data;
+    char *data;
 } game_packet;
 
 /**
@@ -22,7 +21,7 @@ typedef struct
  * @param g the game packet we want to serialize
  * @return char* the serialized bytes array
  */
-char* serialize_packet(game_packet g);
+unsigned char *serialize_packet(game_packet g);
 
 /**
  * @brief Transforms a serialized packet back to a structure
@@ -47,18 +46,19 @@ game_packet deserialize_packet(unsigned char *s_packet);
     "action" : a number which represent an action, exterior the game (0;3), in-game (3;)
         -> 0 : First connection of a player 
         -> 1 : Game data for those who connect or if we need to update the game state for everyone (not sure of what would be in the data yet)
-        -> 2 : IP + Port packet
+        -> 2 : IP + Port + id packet
         -> 3 : Disconnect packet, with IP+Port in data
-        -> 4 : "Move" player packet with coords separated by ";" as data 
-        -> 5 : "Attack" player packet with ??? as data
-        -> 6 : "Chest opening" player packet with ??? as data
-        -> 7 : "Chat" player packet with the message to send to the chat as data
-        -> 8 : Enemies movements packet 
-        -> 9 ! Enemies attack packet
-        -> 10 : maybe more in the future...
+        -> 4 : Player_id packet 
+        -> 5 : "Move" player packet with coords separated by ";" as data 
+        -> 6 : "Attack" player packet with ??? as data
+        -> 7 : "Chest opening" player packet with ??? as data
+        -> 8 : "Chat" player packet with the message to send to the chat as data
+        -> 9 : Enemies movements packet 
+        -> 10 : Enemies attack packet
+        -> 11 : maybe more in the future...
     --
     "data" : this string contains the action of the player, different for each value of action. It may contain IPs, movements instructions...
     --  
 */
 
-#endif 
+#endif

@@ -1,4 +1,5 @@
 import pygame as pg
+import pyperclip
 from src.config.colors import WHITE, BROWN
 
 
@@ -50,6 +51,11 @@ class Input(object):
                 elif event.key == pg.K_BACKSPACE:
                     self.text = self.text[:-1]
                 # Otherwise, write until the max length is exceeded
+                elif event.key == pg.K_v and pg.key.get_mods() & pg.KMOD_CTRL:
+                    if len(self.text + pyperclip.paste()) < self.max_length:
+                        self.text += pyperclip.paste()
+                    else:
+                        return
                 elif len(self.text) < self.max_length:
                     self.text += event.unicode
                 # Don't forget to render after all of this !

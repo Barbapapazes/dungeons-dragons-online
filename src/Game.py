@@ -1,9 +1,8 @@
 """This file contains the Game class which is the central element of
 our game"""
-import queue
+
 import signal
 import sys
-import threading
 from os import path
 import pygame as pg
 from src.config.assets import menus_folder
@@ -13,7 +12,6 @@ from src.Player import Player
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
-
 
 class Game:
     """The game class"""
@@ -53,8 +51,11 @@ class Game:
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
 
+        # ----NETWORK---- #
         self.network = Network(self)
         self.client = Client(self)
+        self.player_id = dict()
+        self.own_id = 10
 
     def check_events(self):
         "Checks for events in our game"
@@ -94,4 +95,3 @@ class Game:
             self.check_events()
             self.clock.tick(30)
             self.network.server()
-            self.client.send("test\n")
