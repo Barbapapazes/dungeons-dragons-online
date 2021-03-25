@@ -11,6 +11,9 @@ from src.Map import Map
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
+from src.config.colors import BLACK, WHITE
+from src.UI.chat import Chat
+
 
 class Game:
     """The game class"""
@@ -48,6 +51,9 @@ class Game:
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
 
+        # ----CHAT---- #
+        self.chat = Chat(400, 150, (30, 30), WHITE, 10, self)
+
         # ----NETWORK---- #
         self.network = Network(self)
         self.client = Client(self)
@@ -62,6 +68,7 @@ class Game:
             if self.menu_running:
                 self.current_menu.check_events(event)
             if self.playing:
+                self.chat.event_handler(event)
                 # Here we are checking inputs when the game is in the "playing" state
                 pass
 
@@ -88,6 +95,7 @@ class Game:
         while self.playing:
             self.display.fill((0, 0, 0))
             self.world_map.draw(self.display, 5, 5)
+            self.chat.draw(self.display)
             self.update_screen()
             self.check_events()
             self.clock.tick(30)
