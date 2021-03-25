@@ -52,7 +52,7 @@ class Game:
         self.current_menu = self.main_menu
 
         # ----CHAT---- #
-        self.chat = Chat(400, 150, (30, 30), WHITE, 10, self)
+        self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
 
         # ----NETWORK---- #
         self.network = Network(self)
