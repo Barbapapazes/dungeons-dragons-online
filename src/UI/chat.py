@@ -24,14 +24,15 @@ class Chat:
         self.user_text = ""
         self.is_send = False
         self.text_to_send = ""
-        self.name = "Default_name"
+        self.name = "You "
 
     def send_chat(self):
         self.game.client.send(str(self.game.own_id)
                               + " 8 " + self.user_text, chat=True)
 
     def receive_chat(self, message):
-        self.log.add_log(message)
+        message_to_print = message.replace("_", " ")
+        self.log.add_log(message_to_print)
 
     def event_handler(self, event):
 

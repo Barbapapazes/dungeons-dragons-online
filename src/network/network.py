@@ -363,9 +363,9 @@ class Network:
         if(chat):
             msg = msg.split(" ")
             mylist = [msg[0], msg[1]]
-            my_str = ""
+            my_str = str(self.game.own_id) + "_said_:_"
             for i in range(2, len(msg)):
-                my_str += msg[i] + " "
+                my_str += msg[i] + "_"
             mylist.append(my_str)
             print("mylist : ", mylist)
             for word in mylist:
