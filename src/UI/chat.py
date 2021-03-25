@@ -11,14 +11,15 @@ class Chat:
     def __init__(self, width, height, position, text_color, font_size, game):
         self.log = Log(width, height, position, text_color, font_size, game)
         self.my_inputbox = Input(
-            game, position[0], position[1], width, height, path.join(fonts_folder, 'alegreya.ttf'), font_size, max_length=140)
+            game, position[1] + width // 2, position[0] + height + 50, width, 50, path.join(fonts_folder, 'alegreya.ttf'), font_size, max_length=140)
         self.user_text = ""
         self.text_to_send = ""
 
     def event_handler(self, event):
-        if self.my_inputbox.active and self.my_inputbox.text != "" and event.type == pg.KEYDOWN:
+        self.my_inputbox.handle_events(event)
+        if event.type == pg.KEYDOWN:
             if event.key == pg.K_BACKSPACE:
-                self.user_text = self.my_inputbox.text
+                self.user_text = self.my_inputbox.get_text()
                 self.my_inputbox.flush_text()
                 self.log.add_log(self.user_text)
 
