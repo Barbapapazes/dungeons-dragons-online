@@ -361,8 +361,15 @@ class Network:
                 self.connections[ip].stdin.write(word)
                 self.connections[ip].stdin.flush()
         if(chat):
+
             msg = msg.split(" ")
+            # Creation of a list with the data we want to send
+            # msg[0] : Player id
+            # msg [1] : action
             mylist = [msg[0], msg[1]]
+
+            # concatenation of data segment in order to make it msg [3]
+            # we use _ in order to separate words " " doesn't work trought our data sending
             my_str = str(self.game.own_id) + "_said_:_"
             for i in range(2, len(msg)):
                 my_str += msg[i] + "_"

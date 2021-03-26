@@ -27,14 +27,25 @@ class Chat:
         self.name = "You "
 
     def send_chat(self):
+        """ Sending data trought the send methode of client
+        """
         self.game.client.send(str(self.game.own_id)
                               + " 8 " + self.user_text, chat=True)
 
     def receive_chat(self, message):
+        """[summary]
+
+        Args:
+            message (string): message that the client receive trought the network
+        """
         message_to_print = message.replace("_", " ")
         self.log.add_log(message_to_print)
 
     def event_handler(self, event):
+        """event manager
+
+
+        """
 
         if event.type == pg.KEYDOWN:
 
@@ -59,5 +70,10 @@ class Chat:
         self.log.event(event)
 
     def draw(self, surface):
+        """drawing of log and input bpx 
+
+        Args:
+            surface : Surface where will be draw the log and the input
+        """
         self.log.print_log(surface)
         self.my_inputbox.display_box()
