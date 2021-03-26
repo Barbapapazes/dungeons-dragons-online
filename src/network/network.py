@@ -113,8 +113,9 @@ class Network:
         else:
             # if no exception is raised it means that line contains something
             # binary flux that we need to decode before manipulate it
-            line = line.decode("ascii")
+            line = line.decode("utf8")
             line = line[:-1]  # delete the final `\n`
+            print("decoded :", line)
             action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
