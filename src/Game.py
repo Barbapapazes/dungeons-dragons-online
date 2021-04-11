@@ -12,8 +12,8 @@ from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
 from src.config.colors import BLACK, WHITE
-from src.UI.chat import Chat
-from src.ingame_menus import CharacterStatus
+from src.UI import CharacterStatus, Chat
+
 
 class Game:
     """The game class"""
@@ -50,19 +50,19 @@ class Game:
         self.character_menu = MenuCharacter(self)
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
-        
+
         # ----INGAME MENUS---- #
         self.character_status = CharacterStatus(self)
 
         # ----CHAT---- #
-        self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
+        self.chat = Chat(400, 180, (15, 15), WHITE, 15, self)
 
         # ----NETWORK---- #
         self.network = Network(self)
         self.client = Client(self)
         self.player_id = dict()
         self.own_id = 10
-    
+
     def check_events(self):
         "Checks for events in our game"
         for event in pg.event.get():
@@ -73,14 +73,9 @@ class Game:
             if self.playing:
                 self.chat.event_handler(event)
                 if event.type == pg.KEYDOWN:
-                    #If we press tab, display the character status menu 
+                    # If we press tab, display the character status menu
                     if event.key == pg.K_TAB:
                         self.character_status.display = True
-                        
-
-    def change_player(self):
-        """The function to switch the current character in the game"""
-        pass
 
     def quit(self):
         """A function to properly quit the game"""
