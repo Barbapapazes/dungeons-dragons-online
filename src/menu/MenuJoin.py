@@ -11,7 +11,7 @@ from os import path
 import pygame as pg
 from src.config.assets import fonts_folder, menus_folder
 from src.config.colors import WHITE
-from src.interface import Button, Input
+from src.interface import Button, Input, Text
 from src.menu._menu import Menu
 
 from src.utils.network import enqueue_output
@@ -27,13 +27,16 @@ class MenuJoin(Menu):
             path.join(menus_folder, "background.png")
         ).convert_alpha()
 
+        self.input_text = Text(self.game.display, self.game.resolution[0] // 2, self.game.resolution[1] // 2
+                               - 35, "Enter IP to join a game :", path.join(fonts_folder, "CascadiaCode.ttf"), WHITE, 15, True)
+
         self.ip_input = Input(
             self.game,
             self.game.resolution[0] // 2,
-            self.game.resolution[1] // 2,
+            self.game.resolution[1] // 2 + 20,
             400,
             50,
-            path.join(fonts_folder, "alegreya.ttf"),
+            path.join(fonts_folder, "CascadiaCode.ttf"),
             32,
             25,
         )
@@ -69,6 +72,12 @@ class MenuJoin(Menu):
             getattr(self, input)
             for input in dir(self)
             if isinstance(getattr(self, input), Input)
+        ]
+
+        self.texts = [
+            getattr(self, text)
+            for text in dir(self)
+            if isinstance(getattr(self, text), Text)
         ]
 
     def check_events(self, event):
@@ -140,6 +149,8 @@ class MenuJoin(Menu):
                 button.color_on_mouse(WHITE)
             for input in self.inputs:
                 input.display_box()
+            for text in self.texts:
+                text.display_text()
 
             self.display_to_game()
             self.game.clock.tick(30)

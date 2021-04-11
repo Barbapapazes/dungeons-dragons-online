@@ -13,8 +13,7 @@ from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
 from src.config.colors import BLACK, WHITE
-from src.UI.chat import Chat
-from src.ingame_menus import CharacterStatus
+from src.UI import CharacterStatus, Chat
 
 
 class Game:
@@ -58,11 +57,8 @@ class Game:
         # ----INGAME MENUS---- #
         self.character_status = CharacterStatus(self)
 
-        # ----INGAME MENUS---- #
-        self.character_status = CharacterStatus(self)
-
         # ----CHAT---- #
-        self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
+        self.chat = Chat(400, 180, (15, 15), WHITE, 15, self)
 
         # ----NETWORK---- #
         self.network = Network(self)
