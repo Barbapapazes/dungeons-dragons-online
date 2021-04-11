@@ -26,3 +26,8 @@
 
 
 # Réunion du 25/03/2021
+
+- Ajout du chat en jeu pour que les joueurs puissent communiquer entre eux 
+
+# Réunion du 15/03/2021
+

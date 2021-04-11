@@ -79,3 +79,8 @@ _Ce fichier a pour but de résumer la chronologie de notre projet, et comment no
 
 * Intégration totale de la sérialisation dans le jeu et travail sur l'ajout du personnage et des interfaces dans le jeu 
 
+## 21 Mars - 11 Avril 
+
+* Ajout d'un chat dans le jeu qui permet aux joueurs de communiquer entre eux 
+* Améliorations des menus pour se connecter à d'autres jeu
+* Travail sur l'ajout d'un personnage et de son pathfinding pour pouvoir commencer à ajouter des monstres
