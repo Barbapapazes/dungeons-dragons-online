@@ -69,8 +69,7 @@ class Game:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     dest = self.world_map.get_clicked_tile()
                     if self.world_map.is_valid_tile(*dest):
-                        # self.player.update_path(dest)
-                        pass
+                        self.player.update_path(dest)
 
     def change_player(self):
         """The function to switch the current character in the game"""
@@ -96,7 +95,7 @@ class Game:
             self.display.fill((0, 0, 0))
             self.world_map.draw(self.display)
             self.world_map.draw_mini(self.display)
-            # self.player.move()
+            self.player.move()
             self.player.draw(self.display)
             self.update_screen()
             self.check_events()

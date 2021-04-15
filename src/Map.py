@@ -82,10 +82,8 @@ class Map:
         self.s_width, self.s_height = RESOLUTION
         self.nb_tileX, self.nb_tileY = (
             self.s_width // TILE_SIZE) - 1, (self.s_height // TILE_SIZE) - 1
-
         self.minimap_size = self.s_width // minimap_reduction, self.s_height // minimap_reduction
         self.minimap = pg.Surface(self.minimap_size, minimap_reduction)
-
         ###Setting canvas###
         self.init_views(self.minimap_size, minimap_reduction)
 
