@@ -76,12 +76,14 @@ class Map:
             [int(map_lines[i][:-1]), int(map_lines[i + 1][:-1])]
             for i in range(-12, 0, 2)
         ]
-        self.centered_in = [0, 0]  # X and Y where is centered
+        self.centered_in = [2, 2]  # X and Y where is centered
         ### Setting minimap ###
         minimap_reduction = 8
-        s_width, s_height = RESOLUTION
-        self.minimap_size = s_width // minimap_reduction, s_height // minimap_reduction
+        self.s_width, self.s_height = RESOLUTION
+        self.nb_tileX, self.nb_tileY = (
+            self.s_width // TILE_SIZE) - 1, (self.s_height // TILE_SIZE) - 1
 
+        self.minimap_size = self.s_width // minimap_reduction, self.s_height // minimap_reduction
         self.minimap = pg.Surface(self.minimap_size, minimap_reduction)
 
         ###Setting canvas###
@@ -115,17 +117,62 @@ class Map:
 
     def draw(self, display):
         "draw a part of map center in x,y (x and y being couted in tiles"
-        s_width, s_height = RESOLUTION
         display.blit(
             self.map_canva,
             (-self.centered_in[0] * TILE_SIZE
-             + s_width / 2, -self.centered_in[1] * TILE_SIZE + s_height / 2),
+             + self.s_width / 2, -self.centered_in[1] * TILE_SIZE + self.s_height / 2),
         )  # display the carpet at the right place
 
     def draw_mini(self, display):
         "Display a minimap"
-        s_width, s_height = RESOLUTION
         self.minimap.fill(DARKBROWN)
         self.minimap.blit(self.mini_canva, (-self.centered_in[0] * self.mini_tile_s
                                             + self.minimap_size[0] / 2, -self.centered_in[1] * self.mini_tile_s + self.minimap_size[1] / 2))
-        display.blit(self.minimap, (s_width - self.minimap_size[0] - 4, 4))
+        display.blit(self.minimap, (self.s_width
+                                    - self.minimap_size[0] - 4, 4))
+
+    def get_clicked_tile(self):
+        """Return the clicked tile"""
+        m_posX, m_posY = pg.mouse.get_pos()
+        m_posX = self.centered_in[0] - \
+            (self.nb_tileX // 2) + (m_posX // TILE_SIZE) - 1
+        m_posY = self.centered_in[1] - \
+            (self.nb_tileY // 2) + (m_posY // TILE_SIZE) - 1
+        return((m_posX, m_posY))
+
+    def is_valid_tile(self, numX, numY):
+        """Return if a tile is a valid number on the map"""
+        return ((0 <= numX < len(self.map[1])) and (0 <= numY < len(self.map)))
+
+    def simple_neigh(self, X, Y):
+        """Return list of around tile, not minding void and wall"""
+        return (('UL', (X - 1, Y - 1)), ('UR', (X + 1, Y - 1)),
+                ('DL', (X - 1, Y + 1)), ('DR', (X + 1, Y + 1)),
+                ('U', (X, Y - 1)), ('D', (X, Y + 1)),
+                ('L', (X - 1, Y)), ('R', (X + 1, Y)))
+
+    def neighbor_list(self, X, Y):
+        """ Return list of accessible neighbors for tile (X,Y) and directions"""
+        around = []
+        corner_list = {'UL': (X - 1, Y - 1), 'UR': (X + 1, Y - 1),
+                       'DL': (X - 1, Y + 1), 'DR': (X + 1, Y + 1)}
+        side_list = {'U': (X, Y - 1), 'D': (X, Y + 1),
+                     'L': (X - 1, Y), 'R': (X + 1, Y)}
+        for action, tile in side_list.items():
+            if not self.map[tile[1]][tile[0]].wall:
+                around.append((tile, action))
+
+        # + tester si DL UL UR DR sont des murs
+        if not self.map[side_list['U'][1]][side_list['U'][0]].wall:
+            if not self.map[side_list['L'][1]][side_list['L'][0]].wall:
+                around.append((corner_list['UL'], 'UL'))
+            if not self.map[side_list['R'][1]][side_list['R'][0]].wall:
+                around.append((corner_list['UR'], 'UR'))
+
+        if not self.map[side_list['D'][1]][side_list['D'][0]].wall:
+            if not self.map[side_list['L'][1]][side_list['L'][0]].wall:
+                around.append((corner_list['DL'], 'DL'))
+            if not self.map[side_list['R'][1]][side_list['R'][0]].wall:
+                around.append((corner_list['DR'], 'DR'))
+
+        return around
