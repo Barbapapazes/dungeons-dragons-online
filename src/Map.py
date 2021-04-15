@@ -19,6 +19,12 @@ for char in dict_tile_list:
         for i in range(len(dict_tile_list[char]))
     ]
 
+dict_img_obj = {
+    "firecamp": pg.image.load("src/assets/objects/firecamp.png"),
+    "chestC": pg.image.load("src/assets/objects/chestClosed.png"),
+    "chestO": pg.image.load("src/assets/objects/chestOpen.png")
+}
+
 
 class Tile:
     "Definition of tiles and properties"
@@ -141,3 +147,43 @@ class Map:
             self.map_canva,
             (-x * TILE_SIZE + s_width / 2, -y * TILE_SIZE + s_height / 2),
         )  # display the carpet at the right place
+
+
+class MapObject:
+    """A class of object on map"""
+
+    def __init__(self, tile):
+        self.tileX, self.tileY = tile
+
+    def activable(self, player_posX, player_posY):
+        """Return weather the player can activate the object or not""""
+        return (abs(self.tileX - player_posX) < 2 and abs(self.tileY - player_posY) < 2)
+
+
+class Firecamp(MapObject):
+    def __init__(self, tile):
+        """Initiate a firecamp"""
+        MapObject.__init__(tile)
+        self.image = dict_img_obj["firecamp"].convert()
+
+    def use(self, player):
+        if(self.activable(player.tileX, player.tileY)):
+            # ++ player health
+            pass
+
+
+class Chest(MapObject):
+    def __init__(self, tile):
+        MapObject.__init__(tile)
+        self.image = dict_img_obj["chestC"].convert()
+        self.obj_list = []
+        # generate obj list
+
+    def isEmpty(self):
+        return (len(self.obj_list) == 0)
+
+    def use(self, player):
+        if not self.isEmpty():
+            # give player obj here
+            self.image = dict_img_obj["chestO"].convert()
+            pass
