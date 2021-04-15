@@ -12,6 +12,9 @@ from src.Player import Player
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
+from src.config.colors import BLACK, WHITE
+from src.UI.chat import Chat
+
 
 
 class Game:
@@ -52,6 +55,9 @@ class Game:
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
 
+        # ----CHAT---- #
+        self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
+
         # ----NETWORK---- #
         self.network = Network(self)
         self.client = Client(self)
@@ -70,6 +76,8 @@ class Game:
                     dest = self.world_map.get_clicked_tile()
                     if self.world_map.is_valid_tile(*dest):
                         self.player.update_path(dest)
+                self.chat.event_handler(event)
+                # Here we are checking inputs when the game is in the "playing" state
 
     def change_player(self):
         """The function to switch the current character in the game"""
@@ -97,6 +105,7 @@ class Game:
             self.world_map.draw_mini(self.display)
             self.player.move()
             self.player.draw(self.display)
+            self.chat.draw(self.display)
             self.update_screen()
             self.check_events()
             self.clock.tick(30)

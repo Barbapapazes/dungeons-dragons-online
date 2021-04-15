@@ -111,11 +111,11 @@ class Network:
         except queue.Empty:
             return
         else:
-            print(line)
             # if no exception is raised it means that line contains something
             # binary flux that we need to decode before manipulate it
-            line = line.decode("ascii")
+            line = line.decode("utf8")
             line = line[:-1]  # delete the final `\n`
+            print("decoded :", line)
             action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
@@ -137,6 +137,10 @@ class Network:
             # if a movement is sent
             elif action == MOVE:
                 self.move(line)
+
+            elif action == "8":
+                print("is in action 8")
+                self.chat_message(line)
 
     def create_connection(self, line):
         # if line[1] not in self.players:
@@ -330,21 +334,50 @@ class Network:
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(host_id)
 
-    def send_message(self, msg: str, ip: str):
+    def chat_message(self, line):
+        my_message = self.get_data_from(line)
+        print("my message : ", my_message)
+        self.game.chat.receive_chat(my_message)
+
+    def send_message(self, msg: str, ip: str, chat=False):
         """format message and send it to the ip
 
         Args:
             msg (string): packet
             ip (string): recipient
         """
-        try:
-            check_message(msg)
-        except ValueError:
-            return
         msg = msg.replace("\n", "")
-        msg = msg.split(" ")
-        for word in msg:
-            word += '\n'
-            word = str.encode(word)
-            self.connections[ip].stdin.write(word)
-            self.connections[ip].stdin.flush()
+        print("test 1 send message", chat)
+        if not chat:
+            try:
+                check_message(msg)
+            except ValueError:
+                return
+
+            msg = msg.split(" ")
+
+            for word in msg:
+                word += '\n'
+                word = str.encode(word)
+                self.connections[ip].stdin.write(word)
+                self.connections[ip].stdin.flush()
+        if(chat):
+
+            msg = msg.split(" ")
+            # Creation of a list with the data we want to send
+            # msg[0] : Player id
+            # msg [1] : action
+            mylist = [msg[0], msg[1]]
+
+            # concatenation of data segment in order to make it msg [3]
+            # we use _ in order to separate words " " doesn't work trought our data sending
+            my_str = str(self.game.own_id) + "_said_:_"
+            for i in range(2, len(msg)):
+                my_str += msg[i] + "_"
+            mylist.append(my_str)
+            print("mylist : ", mylist)
+            for word in mylist:
+                word += '\n'
+                word = str.encode(word)
+                self.connections[ip].stdin.write(word)
+                self.connections[ip].stdin.flush()
