@@ -181,14 +181,15 @@ class Map:
 
         return around
 
-   class MapObject:
+
+class MapObject:
     """A class of object on map"""
 
     def __init__(self, tile):
         self.tileX, self.tileY = tile
 
     def activable(self, player_posX, player_posY):
-        """Return weather the player can activate the object or not""""
+        """Return weather the player can activate the object or not"""
         return (abs(self.tileX - player_posX) < 2 and abs(self.tileY - player_posY) < 2)
 
 
