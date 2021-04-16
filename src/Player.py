@@ -1,5 +1,6 @@
 from src.config.window import TILE_SIZE, RESOLUTION
 from src.utils.astar import bfs
+from random import randint
 import pygame as pg
 
 
@@ -10,11 +11,34 @@ class Player:
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
         self.futur_steps = []  # Will contain list of tile to go trough
+        self.stats = {
+            "strength": 0,
+            "intelligence": 0,
+            "dexterity": 0,
+            "charisma": 0,
+            "constitution": 0,
+            "wisdom": 0
+        }
+
+        self.max_value = {
+            "health": 100
+        }
+
+        self.health = self.max_value["health"]
 
     def draw(self, display):
         """Draw the player on the display"""
         s_width, s_height = RESOLUTION
         display.blit(self.image, (s_width // 2, s_height // 2))
+
+    def take_damage(self, damage):
+        """Give damage to player"""
+        self.health -= damage
+
+    def restore_health(self, min_restoration=0):
+        """Restore player health, with a minimum of min_restoration"""
+        self.health = self.health + randint(
+            min_restoration, self.max_value["health"] - self.health)
 
     def move(self):
         """Move the player to X,Y (counted in tiles)"""
