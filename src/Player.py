@@ -1,4 +1,4 @@
-from src.config.window import TILE_SIZE, RESOLUTION
+from src.config.window import RESOLUTION
 from src.utils.astar import bfs
 from random import randint
 import pygame as pg
@@ -60,6 +60,7 @@ class Player:
 
     def update_path(self, dest):
         self.futur_steps.clear()
+        print(self.map.is_walkable_tile(*dest))
         lastX, lastY = self.tileX, self.tileY
         act_sum = {
             'UL': (- 1, - 1), 'UR': (+ 1, - 1), 'DL': (- 1, + 1), 'DR': (+ 1, + 1),

@@ -135,6 +135,14 @@ class Map:
         display.blit(self.minimap, (self.s_width
                                     - self.minimap_size[0] - 4, 4))
 
+    def is_visible_tile(self, numX, numY):
+        "Return if the tile is displayed"
+        lim_X_left = self.centered_in[0] - self.nb_tileX // 2
+        lim_X_right = self.centered_in[0] + self.nb_tileX // 2
+        lim_Y_left = self.centered_in[1] - self.nb_tileY // 2
+        lim_Y_right = self.centered_in[1] + self.nb_tileY // 2
+        return ((lim_X_left <= numX <= lim_X_right) and (lim_Y_left <= numY <= lim_Y_right))
+
     def get_clicked_tile(self):
         """Return the clicked tile"""
         m_posX, m_posY = pg.mouse.get_pos()
@@ -144,9 +152,19 @@ class Map:
             (self.nb_tileY // 2) + (m_posY // TILE_SIZE) - 1
         return((m_posX, m_posY))
 
+    def get_relative_tile_pos(self, X, Y):
+        "Return the position of the tile on the screen (top left tile being 0,0)"
+        relX = X - (self.centered_in[0] - (self.nb_tileX // 2) - 1)
+        relY = Y - (self.centered_in[1] - (self.nb_tileY // 2) - 1)
+        return (relX, relY)
+
     def is_valid_tile(self, numX, numY):
         """Return if a tile is a valid number on the map"""
         return ((0 <= numX < len(self.map[1])) and (0 <= numY < len(self.map)))
+
+    def is_walkable_tile(self, numX, numY):
+        "Return if a creature can walk the tile"
+        return (not self.map[numY][numX].wall)
 
     def simple_neigh(self, X, Y):
         """Return list of around tile, not minding void and wall"""
