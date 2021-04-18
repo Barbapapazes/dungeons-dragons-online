@@ -60,7 +60,6 @@ class Player:
 
     def update_path(self, dest):
         self.futur_steps.clear()
-        print(self.map.is_walkable_tile(*dest))
         lastX, lastY = self.tileX, self.tileY
         act_sum = {
             'UL': (- 1, - 1), 'UR': (+ 1, - 1), 'DL': (- 1, + 1), 'DR': (+ 1, + 1),

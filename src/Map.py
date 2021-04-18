@@ -164,7 +164,14 @@ class Map:
 
     def is_walkable_tile(self, numX, numY):
         "Return if a creature can walk the tile"
-        return (not self.map[numY][numX].wall)
+        return (self.is_valid_tile(numX, numY) and not self.map[numY][numX].wall)
+
+    def get_free_tile(self):
+        "Return a random walkable tile "
+        X, Y = -1, -1
+        while not self.is_walkable_tile(X, Y):
+            X, Y = randint(0, len(self.map[0])), randint(0, len(self.map))
+        return (X, Y)
 
     def simple_neigh(self, X, Y):
         """Return list of around tile, not minding void and wall"""
@@ -181,22 +188,25 @@ class Map:
         side_list = {'U': (X, Y - 1), 'D': (X, Y + 1),
                      'L': (X - 1, Y), 'R': (X + 1, Y)}
         for action, tile in side_list.items():
-            if not self.map[tile[1]][tile[0]].wall:
+            if self.is_walkable_tile(*tile):
                 around.append((tile, action))
 
         # + tester si DL UL UR DR sont des murs
-        if not self.map[side_list['U'][1]][side_list['U'][0]].wall:
-            if not self.map[side_list['L'][1]][side_list['L'][0]].wall:
+        if self.is_walkable_tile(side_list['U'][0], side_list['U'][1]):
+            if self.is_walkable_tile(side_list['L'][0], side_list['L'][1]) \
+                    and self.is_walkable_tile(corner_list['UL'][0], corner_list['UL'][1]):
                 around.append((corner_list['UL'], 'UL'))
-            if not self.map[side_list['R'][1]][side_list['R'][0]].wall:
+            if self.is_walkable_tile(side_list['R'][0], side_list['R'][1]) \
+                    and self.is_walkable_tile(corner_list['UR'][0], corner_list['UR'][1]):
                 around.append((corner_list['UR'], 'UR'))
 
-        if not self.map[side_list['D'][1]][side_list['D'][0]].wall:
-            if not self.map[side_list['L'][1]][side_list['L'][0]].wall:
+        if self.is_walkable_tile(side_list['D'][0], side_list['D'][1]):
+            if self.is_walkable_tile(side_list['L'][0], side_list['L'][1]) \
+                    and self.is_walkable_tile(corner_list['DL'][0], corner_list['DL'][1]):
                 around.append((corner_list['DL'], 'DL'))
-            if not self.map[side_list['R'][1]][side_list['R'][0]].wall:
+            if self.is_walkable_tile(side_list['R'][0], side_list['R'][1]) \
+                    and self.is_walkable_tile(corner_list['DR'][0], corner_list['DR'][1]):
                 around.append((corner_list['DR'], 'DR'))
-
         return around
 
 

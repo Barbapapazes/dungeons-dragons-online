@@ -76,7 +76,7 @@ class Game:
             if self.playing:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     dest = self.world_map.get_clicked_tile()
-                    if self.world_map.is_valid_tile(*dest):
+                    if self.world_map.is_walkable_tile(*dest):
                         self.player.update_path(dest)
                 self.chat.event_handler(event)
 
