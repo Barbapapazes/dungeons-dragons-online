@@ -8,8 +8,7 @@ class Enemy:
     def __init__(self, map):
         self.map = map
         self.image = pg.image.load("src/assets/enemy.png")
-        self.tileX = 6
-        self.tileY = 6
+        self.tileX, self.tileY = self.map.get_free_tile()
         self.pause_turn = 1  # Pause the enemy during X turn
         self.futur_steps = []  # Will contain list of tile to go trough
         self.stats = {
@@ -82,3 +81,13 @@ class Enemy:
             step = (lastX + act_sum[action][0], lastY + act_sum[action][1])
             lastX, lastY = step
             self.futur_steps.append(step)
+
+
+def manage_enemy(game):
+    "Manage and create the enemy list"
+    # Try to create a new enemy
+    if (len(game.enemy_list) <= 15) and (randint(0, 10) > 9):
+        game.enemy_list.append(Enemy(game.world_map))
+    for e in game.enemy_list:
+        e.act()
+        e.draw(game.display)

@@ -9,7 +9,7 @@ from src.config.assets import menus_folder
 from src.network import Client, Network
 from src.Map import Map
 from src.Player import Player
-from src.Enemy import Enemy
+from src.Enemy import manage_enemy
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
@@ -50,7 +50,7 @@ class Game:
         # ------PLAYER----- #
         self.player = Player(self.world_map)
         # ------ENEMY------ #
-        self.enemy_list = [Enemy(self.world_map)]
+        self.enemy_list = []
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)
@@ -103,9 +103,7 @@ class Game:
             self.world_map.draw(self.display)
             self.world_map.draw_mini(self.display)
             self.player.move()
-            for e in self.enemy_list:
-                e.act()
-                e.draw(self.display)
+            manage_enemy(self)
             self.player.draw(self.display)
             self.chat.draw(self.display)
             self.update_screen()
