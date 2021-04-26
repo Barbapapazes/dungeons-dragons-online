@@ -36,7 +36,7 @@ class Enemy:
 
     def take_damage(self, damage):
         """Give damage to player"""
-        self.health -= damage
+        self.health -= max(0,damage)
 
     def act(self):
         """Update position, wait or generate a path """
