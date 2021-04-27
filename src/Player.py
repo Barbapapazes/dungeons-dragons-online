@@ -1,4 +1,4 @@
-from src.config.window import TILE_SIZE, RESOLUTION
+from src.config.window import RESOLUTION
 from src.utils.astar import bfs
 from random import randint
 import pygame as pg
