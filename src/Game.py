@@ -49,6 +49,7 @@ class Game:
         self.world_map = Map("./src/maps/map1/map1.txt")
         # ------PLAYER----- #
         self.player = Player(self.world_map)
+        self.other_player = dict()  # key is the client id, value is a DistantPlayer instance
         # ------ENEMY------ #
         self.enemy_list = []
         # ------MENUS------ #
@@ -105,6 +106,8 @@ class Game:
             self.player.move()
             manage_enemy(self)
             self.player.draw(self.display)
+            for o_player in self.other_player.values():
+                o_player.draw(self.world_map, self.display)
             self.chat.draw(self.display)
             self.update_screen()
             self.check_events()

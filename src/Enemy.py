@@ -27,7 +27,7 @@ class Enemy:
         self.health = self.max_value["health"]
 
     def draw(self, display):
-        """Draw the player on the display"""
+        """Draw the ennmy on the display"""
         if self.map.is_visible_tile(self.tileX, self.tileY):
             relativX, relativY = self.map.get_relative_tile_pos(
                 self.tileX, self.tileY)
@@ -36,7 +36,7 @@ class Enemy:
 
     def take_damage(self, damage):
         """Give damage to player"""
-        self.health -= max(0,damage)
+        self.health -= max(0, damage)
 
     def act(self):
         """Update position, wait or generate a path """

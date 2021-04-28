@@ -1,4 +1,4 @@
-from src.config.window import RESOLUTION
+from src.config.window import RESOLUTION, TILE_SIZE
 from src.utils.astar import bfs
 from random import randint
 import pygame as pg
@@ -69,3 +69,22 @@ class Player:
             step = (lastX + act_sum[action][0], lastY + act_sum[action][1])
             lastX, lastY = step
             self.futur_steps.append(step)
+
+
+class DistantPlayer:
+    def __init__(self):
+        self.image = pg.image.load("src/assets/extern_player.png")
+        self.tileX = 2  # Will have to put map start point here
+        self.tileY = 2
+
+    def draw(self, map, display):
+        """Draw the player on the display"""
+        if map.is_visible_tile(self.tileX, self.tileY):
+            relativX, relativY = map.get_relative_tile_pos(
+                self.tileX, self.tileY)
+            relativX, relativY = relativX * TILE_SIZE, relativY * TILE_SIZE
+            display.blit(self.image, (relativX, relativY))
+
+    def move(self, X, Y):
+        self.tileX = X
+        self.tileY = Y

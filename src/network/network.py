@@ -5,6 +5,7 @@ import queue
 import signal
 import time
 import threading
+from src.Player import DistantPlayer
 from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE
 from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet
 from os import path
@@ -225,11 +226,13 @@ class Network:
         Args:
             line (str)
         """
-        # data is of the form "ip:port:id"
+        # data is in the form "ip:port:id"
         self.create_connection(line)
         id = get_id_from_packet(line)
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
+        self.game.other_player[id] = DistantPlayer()
+        print(self.game.other_player)
         try:
             self.add_to_clients(ip)
         except Exception as e:
