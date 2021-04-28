@@ -15,6 +15,7 @@ import traceback
 class Network:
     def __init__(self, game):
         self.game = game
+        self.player_id = game.player_id
         self.ip = get_ip()
         self.port = 8000
         self._server = self.create_serveur()
@@ -249,7 +250,10 @@ class Network:
         """
         try:
             client = self.get_data_from(line)
+            print("before id", self.player_id)
             self.remove_from_client(client)
+            self.remove_from_player_id(client)
+            print("after id", self.player_id)
             self.kill(client)
             self.remove_connexion(client)
         except Exception as e:
@@ -271,6 +275,14 @@ class Network:
             client (string): ip:port
         """
         self.client_ip_port.remove(client)
+
+    def remove_from_player_id(self, client):
+        """remove the client from the dict player_id
+
+        Args:
+            client (string): ip:port
+        """
+        del self.player_id[client]
 
     def remove_connexion(self, client):
         """Delete the two threads associated to the client from the connections and ping dictionnary
