@@ -62,10 +62,10 @@ class Game:
         self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
 
         # ----NETWORK---- #
-        self.network = Network(self)
-        self.client = Client(self)
         self.player_id = dict()
         self.own_id = 10
+        self.network = Network(self)
+        self.client = Client(self)
 
     def check_events(self):
         "Checks for events in our game"
