@@ -250,10 +250,8 @@ class Network:
         """
         try:
             client = self.get_data_from(line)
-            print("before id", self.player_id)
             self.remove_from_client(client)
             self.remove_from_player_id(client)
-            print("after id", self.player_id)
             self.kill(client)
             self.remove_connexion(client)
         except Exception as e:
