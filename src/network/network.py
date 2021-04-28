@@ -7,7 +7,7 @@ import time
 import threading
 from src.Player import DistantPlayer
 from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE
-from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet
+from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet, get_id_from_all_packet
 from os import path
 import traceback
 
@@ -135,9 +135,16 @@ class Network:
             elif action == CHANGE_ID:
                 self.change_id(line)
 
-            # if a movement is sent
+            # if a movement is received
             elif action == MOVE:
-                self.move(line)
+                mover_id = get_id_from_all_packet(line)
+                unparsed_target = self.get_data_from(line)
+                target = unparsed_target.split("/")
+                target = list(map(int, target))
+                print("Player ", mover_id, "moving to ", target)
+                self.game.distant_player_move(
+                    mover_id, target)
+                # ID + Action + str
 
             elif action == "8":
                 print("is in action 8")
@@ -183,6 +190,7 @@ class Network:
             new_id = str(int(list(self.game.player_id.values())[-1]) + 1)
         else:
             new_id = str(self.game.own_id + 1)
+        self.game.other_player[new_id] = DistantPlayer()
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 "
@@ -232,7 +240,6 @@ class Network:
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
         self.game.other_player[id] = DistantPlayer()
-        print(self.game.other_player)
         try:
             self.add_to_clients(ip)
         except Exception as e:
@@ -333,9 +340,10 @@ class Network:
             line (string) : packet
         """
         ip = get_ip_from_packet(line)
-        host_id = get_id_from_packet(line)
+        own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
-        self.game.own_id = int(host_id)
+        self.game.own_id = int(own_id)
+        self.game.other_player[line.split(" ")[0]] = DistantPlayer()
 
     def chat_message(self, line):
         my_message = self.get_data_from(line)

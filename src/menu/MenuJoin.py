@@ -99,7 +99,6 @@ class MenuJoin(Menu):
                 return
             self.displaying = False
             self.game.menu_running = False
-            self.game.playing = True
             # unpause the server
             os.kill(self.game.network._server.pid, signal.SIGUSR2)
             self.game.network.client_ip_port.add(client_ip)
@@ -126,6 +125,7 @@ class MenuJoin(Menu):
             tmp_thread.start()
             print(client_ip)
             self.game.network.ping[client_ip] = (tmp_thread, tmp_queue)
+            self.game.playing = True
 
     def display_menu(self):
         """Displays the menu on our screen"""

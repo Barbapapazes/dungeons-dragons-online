@@ -21,6 +21,12 @@ def get_ip():
     return IP
 
 
+def get_id_from_all_packet(msg: str):
+    """Get id from a packet where ID is in second pos and separated by spaces"""
+    msg = msg.split(" ")
+    return int(msg[0])
+
+
 def enqueue_output(out, queue_line):
     """Queued the first line from stdout in the queue passed in parameter
 

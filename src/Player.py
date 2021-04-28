@@ -5,8 +5,9 @@ import pygame as pg
 
 
 class Player:
-    def __init__(self, map):
-        self.map = map
+    def __init__(self, game):
+        self.game = game
+        self.map = game.world_map
         self.image = pg.image.load("src/assets/player.png")
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
@@ -44,7 +45,12 @@ class Player:
         """Move the player to X,Y (counted in tiles)"""
         if len(self.futur_steps) != 0:
             self.tileX, self.tileY = self.futur_steps.pop(0)
+            # local move
             self.map.centered_in = [self.tileX, self.tileY]
+            # Send move to other clients
+            line = str(self.game.own_id) + " 5 " + \
+                str(self.tileX) + "/" + str(self.tileY)
+            self.game.client.send(line)
 
     def handle_event(self):
         """Check if needs to move and do so"""

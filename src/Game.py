@@ -48,7 +48,7 @@ class Game:
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
         # ------PLAYER----- #
-        self.player = Player(self.world_map)
+        self.player = Player(self)
         self.other_player = dict()  # key is the client id, value is a DistantPlayer instance
         # ------ENEMY------ #
         self.enemy_list = []
@@ -113,3 +113,9 @@ class Game:
             self.check_events()
             self.clock.tick(30)
             self.network.server()
+
+    def distant_player_move(self, p_id, target):
+        """Move the player p_id to the target pos on local game"""
+        print("Other players :", self.other_player,
+              "\nTarget id", p_id, " target", target)
+        self.other_player[p_id].move(*target)
