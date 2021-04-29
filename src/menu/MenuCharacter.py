@@ -19,11 +19,11 @@ class MenuCharacter(Menu):
             path.join(menus_folder, "background.png")
         ).convert_alpha()
 
-        self.play_button = Button(
+        self.create_button = Button(
             self.game,
             self.game.resolution[0] // 2,
             self.game.resolution[1] // 2,
-            "Play",
+            "Create",
             path.join(fonts_folder, "enchanted_land.otf"),
             WHITE,
             40,
@@ -59,11 +59,12 @@ class MenuCharacter(Menu):
         Args:
             event (Event): a pygame event
         """
-        if self.play_button.is_clicked(event):
+        if self.create_button.is_clicked(event):
             self.game.menu_running = False
             # unpause the server
             os.kill(self.game.network._server.pid, signal.SIGUSR2)
             self.displaying = False
+            self.game.own_id = 10  # We create the party so we have the basic id : 10
             self.game.playing = True
         if self.join_button.is_clicked(event):
             self.game.current_menu = self.game.join_menu

@@ -117,7 +117,6 @@ class Network:
             # binary flux that we need to decode before manipulate it
             line = line.decode("utf8")
             line = line[:-1]  # delete the final `\n`
-            print("decoded :", line)
             action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
@@ -142,13 +141,11 @@ class Network:
                 unparsed_target = self.get_data_from(line)
                 target = unparsed_target.split("/")
                 target = list(map(int, target))
-                print("Player ", mover_id, "moving to ", target)
                 self.game.distant_player_move(
                     mover_id, target)
                 # ID + Action + str
 
             elif action == "8":
-                print("is in action 8")
                 self.chat_message(line)
 
     def create_connection(self, line):
@@ -191,7 +188,7 @@ class Network:
             new_id = str(int(list(self.game.player_id.values())[-1]) + 1)
         else:
             new_id = str(self.game.own_id + 1)
-        self.game.other_player[new_id] = DistantPlayer()
+        self.game.other_player[int(new_id)] = DistantPlayer()
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 "
@@ -240,7 +237,7 @@ class Network:
         id = get_id_from_packet(line)
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
-        self.game.other_player[id] = DistantPlayer()
+        self.game.other_player[int(id)] = DistantPlayer()
         try:
             self.add_to_clients(ip)
         except Exception as e:
@@ -258,6 +255,7 @@ class Network:
         try:
             client = self.get_data_from(line)
             self.remove_from_client(client)
+            self.remove_from_other_player(int(self.player_id[client]))
             self.remove_from_player_id(client)
             self.kill(client)
             self.remove_connexion(client)
@@ -289,6 +287,14 @@ class Network:
         """
         del self.player_id[client]
 
+    def remove_from_other_player(self, p_id):
+        """remove the player from the dict other_player
+
+        Args:
+            p_id (int): id of the player to remove
+        """
+        del self.game.other_player[p_id]
+
     def remove_connexion(self, client):
         """Delete the two threads associated to the client from the connections and ping dictionnary
 
@@ -307,7 +313,7 @@ class Network:
         pid = self.connections[client].pid
         os.kill(pid, signal.SIGINT)
 
-    @staticmethod
+    @ staticmethod
     def get_data_from(line):
         """get data part of the packet
 
@@ -325,7 +331,7 @@ class Network:
             raise Exception("Can't split the line")
         return line[2]
 
-    @staticmethod
+    @ staticmethod
     def get_action_from(line):
         """get action part of the packet
 
@@ -353,7 +359,7 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
-        self.game.other_player[line.split(" ")[0]] = DistantPlayer()
+        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
 
     def chat_message(self, line):
         my_message = self.get_data_from(line)
@@ -367,6 +373,7 @@ class Network:
             msg (string): packet
             ip (string): recipient
         """
+
         msg = msg.replace("\n", "")
         print("test 1 send message", chat)
         if not chat:

@@ -1,5 +1,6 @@
 from src.config.window import RESOLUTION, TILE_SIZE
 from src.utils.astar import bfs
+from src.utils.network import is_initialized_id
 from random import randint
 import pygame as pg
 
@@ -50,7 +51,8 @@ class Player:
             # Send move to other clients
             line = str(self.game.own_id) + " 5 " + \
                 str(self.tileX) + "/" + str(self.tileY)
-            self.game.client.send(line)
+            if is_initialized_id(self.game.own_id):
+                self.game.client.send(line)
 
     def handle_event(self):
         """Check if needs to move and do so"""
@@ -90,6 +92,10 @@ class DistantPlayer:
                 self.tileX, self.tileY)
             relativX, relativY = relativX * TILE_SIZE, relativY * TILE_SIZE
             display.blit(self.image, (relativX, relativY))
+
+    def get_current_pos(self):
+        "Return X, Y the current position"
+        return (self.tileX, self.tileY)
 
     def move(self, X, Y):
         self.tileX = X

@@ -86,3 +86,8 @@ def get_ip_from_packet(msg: str):
     if len(msg) < 2:
         raise ValueError
     return msg[0] + ":" + msg[1]
+
+
+def is_initialized_id(my_id):
+    """Check if the id has been initialized : id > 0"""
+    return my_id > 0

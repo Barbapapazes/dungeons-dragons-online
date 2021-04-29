@@ -63,7 +63,8 @@ class Game:
 
         # ----NETWORK---- #
         self.player_id = dict()
-        self.own_id = 10
+        # Initialized when a party is created (10) or w<hen id is updated from other clients
+        self.own_id = -1
         self.network = Network(self)
         self.client = Client(self)
 
@@ -116,6 +117,8 @@ class Game:
 
     def distant_player_move(self, p_id, target):
         """Move the player p_id to the target pos on local game"""
-        print("Other players :", self.other_player,
-              "\nTarget id", p_id, " target", target)
+        exX, exY = self.other_player[int(p_id)].get_current_pos()
+        self.world_map.map[exY][exX].wall = False
         self.other_player[int(p_id)].move(*target)
+        newX, newY = target
+        self.world_map.map[newY][newX].wall = True
