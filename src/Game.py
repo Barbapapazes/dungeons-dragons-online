@@ -118,4 +118,4 @@ class Game:
         """Move the player p_id to the target pos on local game"""
         print("Other players :", self.other_player,
               "\nTarget id", p_id, " target", target)
-        self.other_player[p_id].move(*target)
+        self.other_player[int(p_id)].move(*target)
