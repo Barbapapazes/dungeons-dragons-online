@@ -183,11 +183,7 @@ class Network:
         """
 
         target_ip = self.get_data_from(line)
-        if len(self.game.player_id) > 0:
-            # get last id and add 1 to it
-            new_id = str(int(list(self.game.player_id.values())[-1]) + 1)
-        else:
-            new_id = str(self.game.own_id + 1)
+        new_id = self.generate_new_id()
         self.game.other_player[int(new_id)] = DistantPlayer()
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
@@ -208,6 +204,15 @@ class Network:
         self.send_message(msg, target_ip)
         # add to our player_id dictionnary his id
         self.game.player_id[target_ip] = new_id
+
+    def generate_new_id(self):
+        if len(self.game.player_id) > 0:
+            # get last id and add 1 to it
+            new_id = str(
+                max(int(max(list(self.game.player_id.values()))) + 1, self.game.own_id + 1))
+        else:
+            new_id = str(self.game.own_id + 1)
+        return new_id
 
     def new_connexion(self, line):
         """Handle a new connexion on the network

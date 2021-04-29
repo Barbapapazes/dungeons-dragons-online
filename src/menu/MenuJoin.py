@@ -35,7 +35,7 @@ class MenuJoin(Menu):
             50,
             path.join(fonts_folder, "enchanted_land.otf"),
             32,
-            20,
+            25,
         )
 
         self.return_button = Button(
