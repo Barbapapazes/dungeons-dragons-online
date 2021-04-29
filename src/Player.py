@@ -84,6 +84,14 @@ class DistantPlayer:
         self.image = pg.image.load("src/assets/extern_player.png")
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
+        self.stats = {
+            "strength": 0,
+            "intelligence": 0,
+            "dexterity": 0,
+            "charisma": 0,
+            "constitution": 0,
+            "wisdom": 0
+        }
 
     def draw(self, map, display):
         """Draw the player on the display"""
