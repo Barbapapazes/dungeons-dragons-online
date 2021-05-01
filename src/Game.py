@@ -47,7 +47,7 @@ class Game:
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
         # ------PLAYER----- #
-        self.player = Player(self.world_map)
+        self.player = Player(self.world_map, self)
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)
@@ -78,11 +78,13 @@ class Game:
                     dest = self.world_map.get_clicked_tile()
                     if self.world_map.is_valid_tile(*dest):
                         self.player.update_path(dest)
-                self.chat.event_handler(event)
                 if event.type == pg.KEYDOWN:
                     # If we press tab, display the character status menu
                     if event.key == pg.K_TAB:
                         self.character_status.display = True
+                    if event.key == pg.K_i:
+                        self.player.inventory.display = True
+                self.chat.event_handler(event)
 
     def change_player(self):
         """The function to switch the current character in the game"""
@@ -111,8 +113,8 @@ class Game:
             self.player.move()
             self.player.draw(self.display)
             self.chat.draw(self.display)
-            self.world_map.draw(self.display, 5, 5)
             self.character_status.draw()
+            self.player.inventory.draw()
             self.check_events()
             self.update_screen()
             self.clock.tick(30)

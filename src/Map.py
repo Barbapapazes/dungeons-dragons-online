@@ -90,7 +90,7 @@ class Map:
             self.s_width // TILE_SIZE) - 1, (self.s_height // TILE_SIZE) - 1
         self.minimap_size = self.s_width // minimap_reduction, self.s_height // minimap_reduction
         self.minimap = pg.Surface(self.minimap_size, minimap_reduction)
-        ###Setting canvas###
+        ### Setting canvas ###
         self.init_views(self.minimap_size, minimap_reduction)
 
     def init_views(self, mini_size, mini_coeff):

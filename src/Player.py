@@ -1,11 +1,17 @@
 from src.config.window import TILE_SIZE, RESOLUTION
 from src.utils.astar import bfs
+from src.UI.Inventory import Inventory
 from random import randint
 import pygame as pg
+# /!\ testing purposes, to delete later
+from .Item import CombatItem, ConsumableItem, OresItem
 
 
 class Player:
-    def __init__(self, map):
+    """The player class"""
+
+    def __init__(self, map, game):
+        self.game = game
         self.map = map
         self.image = pg.image.load("src/assets/player.png")
         self.tileX = 2  # Will have to put map start point here
@@ -25,6 +31,14 @@ class Player:
         }
 
         self.health = self.max_value["health"]
+
+        # Inventory and items
+        self.inventory = Inventory(self.game)
+        axe = CombatItem("Axe")
+        sword = CombatItem("Sword")
+        small_potion = ConsumableItem("Small Potion")
+        gold = OresItem("Gold Ore")
+        self.inventory.add_items([axe, sword, small_potion, gold])
 
     def draw(self, display):
         """Draw the player on the display"""

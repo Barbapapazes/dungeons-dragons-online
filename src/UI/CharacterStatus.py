@@ -26,7 +26,7 @@ class CharacterStatus():
         self.clock = pg.time.Clock()
 
         self.screen_position = self.game.resolution[0] // 2 - self.surface.get_width(
-        ) // 2, self.game.resolution[1] // 2 - self.surface.get_width() // 2
+        ) // 2, self.game.resolution[1] // 2 - self.surface.get_height() // 2
 
         # Builtin text that we will change later
         self.character_name = Text(self.surface, 160, 125, "Personnage", path.join(
