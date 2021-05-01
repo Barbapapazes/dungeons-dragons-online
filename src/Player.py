@@ -54,6 +54,10 @@ class Player:
             if is_initialized_id(self.game.own_id):
                 self.game.client.send(line)
 
+    def get_current_pos(self):
+        "Return X, Y the current position"
+        return (self.tileX, self.tileY)
+
     def handle_event(self):
         """Check if needs to move and do so"""
         if pg.key.get_pressed()[pg.K_z]:

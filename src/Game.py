@@ -117,6 +117,7 @@ class Game:
 
     def distant_player_move(self, p_id, target):
         """Move the player p_id to the target pos on local game"""
+        print(self.other_player)
         exX, exY = self.other_player[int(p_id)].get_current_pos()
         self.world_map.map[exY][exX].wall = False
         self.other_player[int(p_id)].move(*target)

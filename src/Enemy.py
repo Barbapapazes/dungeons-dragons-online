@@ -5,7 +5,8 @@ import pygame as pg
 
 
 class Enemy:
-    def __init__(self, map):
+    def __init__(self, map, e_id):
+        self.id = e_id
         self.map = map
         self.image = pg.image.load("src/assets/enemy.png")
         self.tileX, self.tileY = self.map.get_free_tile()
@@ -86,8 +87,11 @@ class Enemy:
 def manage_enemy(game):
     "Manage and create the enemy list"
     # Try to create a new enemy
-    if (len(game.enemy_list) <= 15) and (randint(0, 10) > 9):
-        game.enemy_list.append(Enemy(game.world_map))
+    if (len(game.enemy_list) <= 5) and (randint(0, 10) > 9):
+        e_id = len(game.enemy_list)
+        while (any(e.id == e_id for e in game.enemy_list)):
+            e_id += 1
+        game.enemy_list.append(Enemy(game.world_map, e_id))
     for e in game.enemy_list:
         e.act()
         e.draw(game.display)

@@ -176,7 +176,7 @@ class Network:
         self.ping[ip] = (tmp_thread, tmp_queue)
 
     def first_connection(self, line):
-        """Define what the program does when a new connection occurres
+        """Manage the first connection with a client and send the info to other clients
 
         Args:
             target_ip (str): string that contains the ip:port of the new connection
@@ -197,13 +197,13 @@ class Network:
             msg = str(str(self.game.own_id) + " 2 "
                       + ip + ":" + self.game.player_id[ip])
             self.send_message(msg, target_ip)
-
         # Send to the client his id and our ip:port (he will add it to his player_id dictionnary)
         msg = str(str(self.game.own_id) + " 4 "
                   + self.ip + ":" + str(self.port) + ":" + new_id)
         self.send_message(msg, target_ip)
         # add to our player_id dictionnary his id
         self.game.player_id[target_ip] = new_id
+        self.init_player_pos(target_ip)
 
     def generate_new_id(self):
         if len(self.game.player_id) > 0:
@@ -214,14 +214,24 @@ class Network:
             new_id = str(self.game.own_id + 1)
         return new_id
 
+    def init_player_pos(self, target_ip):
+        """Send the position of all player to the new client to init other_player position
+        """
+        # Send our current position to the new connexion
+        pX, pY = self.game.player.get_current_pos()
+        pos_msg = str(self.game.own_id) + " 5 " + str(pX) + "/" + str(pY)
+        self.send_message(pos_msg, target_ip)
+
     def new_connexion(self, line):
-        """Handle a new connexion on the network
+        """Handle a new connexion (new client) on the network
 
         Args:
             line (str)
         """
         # self.players[line[1]] = Player()
+        # Establish connection with the new client
         self.create_connection(line)
+        # Manage first connection / info to other clients
         self.first_connection(line)
 
         try:
@@ -243,6 +253,7 @@ class Network:
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
         self.game.other_player[int(id)] = DistantPlayer()
+        print("New connection : [", id, "] ", ip)
         try:
             self.add_to_clients(ip)
         except Exception as e:

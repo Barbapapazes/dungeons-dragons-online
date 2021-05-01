@@ -49,7 +49,7 @@ game_packet deserialize_packet(unsigned char *s_packet);
         -> 2 : IP + Port + id packet
         -> 3 : Disconnect packet, with IP+Port in data
         -> 4 : Player_id packet 
-        -> 5 : "Move" player packet with coords separated by ";" as data 
+        -> 5 : "Move" player packet with coords separated by "/" as data 
         -> 6 : "Attack" player packet with ??? as data
         -> 7 : "Chest opening" player packet with ??? as data
         -> 8 : "Chat" player packet with the message to send to the chat as data
