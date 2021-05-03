@@ -1,3 +1,12 @@
+""" 
+src/UI/Inventory.py 
+
+This class contains the fully working inventory separated in two parts :
+    - The inventory
+    - The equipment which influes on the statistics of the player
+
+Items can be dragged and dropped, equipped, or put in the trash
+"""
 import pygame as pg
 from src.config.assets import ingame_menus_folder
 from os import path
@@ -28,7 +37,6 @@ class Inventory():
 
         # Useful flags
         self.display = False
-        self.flag = False
         self.clock = pg.time.Clock()
 
         # Position on screen
@@ -50,8 +58,6 @@ class Inventory():
 
     def draw(self):
         """Displays the inventory of the player"""
-        self.flag = False
-
         # Blurring background
         if self.display:
             self.bis_blurred = self.game.display.copy()
@@ -75,43 +81,50 @@ class Inventory():
                 if event.type == pg.QUIT:
                     self.display = False
                     self.game.quit()
-                # If a key is pressed
+                # If a key is pressed
                 if event.type == pg.KEYDOWN:
+                    # Inventory key
                     if event.key == pg.K_i:
-                        self.display = False
-                        self.drag = False
+                        self.close_inventory()
                 # Handling descriptions
                 if event.type == pg.MOUSEBUTTONDOWN and event.button == 3 and not self.drag:
-                    if self.detect_item(*event.pos):
-                        self.inv_grid[self.gtoc_y(
-                            event.pos[1])][self.gtoc_x(event.pos[0])].display_desc = not self.inv_grid[self.gtoc_y(
-                                event.pos[1])][self.gtoc_x(event.pos[0])].display_desc
-                        print(self.inv_grid[self.gtoc_y(event.pos[1])]
-                              [self.gtoc_x(event.pos[0])].display_desc)
-                self.drag_and_drop(event)
+                    if self.detect_item_inv(*event.pos):
+                        item_on_mouse = self.inv_grid[self.gtoc_y(
+                            event.pos[1])][self.gtoc_x(event.pos[0])]
+                    elif self.detect_item_eq(*event.pos):
+                        item_on_mouse = self.equipment[self.gtoc_x(
+                            event.pos[0])]
+                    # If the item is already displaying a description we close it
+                    if item_on_mouse.display_desc:
+                        self.current_desc = None
+                        item_on_mouse.display_desc = False
+                    # Else we display his description
+                    else:
+                        self.current_desc = item_on_mouse.item_desc
+                        item_on_mouse.display_desc = True
+                # Drag and drop handling
+                if not self.current_desc:
+                    self.drag_and_drop(event)
 
+            # Bliting the inventory scene to the game
             self.game.window.blit(self.bis, (0, 0))
-            self.flag = True
             pg.display.update()
             self.clock.tick(70)
 
     def drag_and_drop(self, event):
-        """Handles the drag and drop in the inventory"""
+        """Handles the drag and drop in the inventory
+        This function is basically very complicated a needs simplifications for it in the future"""
         ### -------- IF AN ITEM IS CLICKED -------- ###
         if event.type == pg.MOUSEBUTTONDOWN and not event.type == pg.MOUSEBUTTONUP and not event.type == pg.MOUSEMOTION and event.button == 1:
-            # Getting mouse coords
             mx, my = event.pos
-            print(
-                f"(mx, my): {mx},{my} | {self.gtos_x(mx)},{self.gtos_y(my)} | {self.gtoc_x(mx)}, {self.gtoc_y(my)}")
             # If the item is in the inventory
             if self.gtos_x(mx) in range(*self.INV_WIDTH) and self.gtos_y(my) in range(*self.INV_HEIGHT):
                 # Getting back which item are we dragging and starting drag and drop
-                if self.detect_item(mx, my):
+                if self.detect_item_inv(mx, my):
                     self.current_item = self.inv_grid[self.gtoc_y(
                         my)][self.gtoc_x(mx)]
                     self.origin = [0, self.gtoc_x(mx), self.gtoc_y(my)]
                     self.inv_grid[self.gtoc_y(my)][self.gtoc_x(mx)] = None
-                    print(f"[Inventory] Item picked as {self.origin}")
 
             # If the item is in the equipment
             if self.gtos_x(mx) in range(*self.EQ_WIDTH) and self.gtos_y(my) in range(*self.EQ_HEIGHT):
@@ -135,11 +148,9 @@ class Inventory():
         elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
             self.drag = False
             mx, my = event.pos
-
             # If the item is released anywhere but not in inventory
             if self.current_item and not (self.gtos_x(mx) in range(*self.INV_WIDTH) and self.gtos_y(my) in range(*self.INV_HEIGHT)) \
                     and not (self.gtos_x(mx) in range(*self.EQ_WIDTH) and self.gtos_y(my) in range(*self.EQ_HEIGHT)):
-                print("[Inventory] Item released outside of inventory")
                 # If the item comes from the inventory
                 if self.origin[0] == 0:
                     self.current_item.pos = self.origin[1], self.origin[2]
@@ -152,7 +163,7 @@ class Inventory():
             # If the item is released in the inventory
             if self.current_item and self.gtos_x(mx) in range(*self.INV_WIDTH) and self.gtos_y(my) in range(*self.INV_HEIGHT):
                 # If there is an item in the inventory case we are trying to release in
-                if self.detect_item(mx, my):
+                if self.detect_item_inv(mx, my):
                     # If the item we want to put comes from the inventory
                     if self.origin[0] == 0:
                         self.inv_grid[self.gtoc_y(my)][self.gtoc_x(
@@ -167,8 +178,6 @@ class Inventory():
                 self.current_item.pos = self.gtoc_x(mx), self.gtoc_y(my)
                 self.inv_grid[self.gtoc_y(my)][self.gtoc_x(
                     mx)] = self.current_item
-                print(
-                    f"[Inventory] Item released in inventory : pos = {self.current_item.pos}")
                 # If the item is released in the trash
                 if self.gtoc_x(mx) == 4 and self.gtoc_y(my) == 3:
                     self.inv_grid[self.gtoc_y(my)][self.gtoc_x(mx)] = None
@@ -189,14 +198,11 @@ class Inventory():
                                        ] = self.equipment[self.gtoc_x(mx)]
                 self.current_item.pos = self.gtoc_x(mx), 0
                 self.equipment[self.gtoc_x(mx)] = self.current_item
-                print(
-                    f"[Inventory] Item released in equipment : pos = {self.current_item.pos}")
-                print(f"State of the equipment : {self.equipment}")
             self.current_item, self.origin = None, None
         ### -------- IF AN ITEM IS BEING DRAGGED -------- ###
         elif event.type == pg.MOUSEMOTION:
+            mx, my = event.pos
             if self.drag and self.current_item:
-                mx, my = event.pos
                 # Calculating new coords for our item
                 self.current_item.item_rect.x = mx - \
                     self.screen_position[0] - \
@@ -204,8 +210,6 @@ class Inventory():
                 self.current_item.item_rect.y = my - \
                     self.screen_position[1] - \
                     self.current_item.item_rect.height // 2
-                print(
-                    f'Item rect : {self.current_item.item_rect.x}|{self.current_item.item_rect.y}')
                 # Display item on cursor
                 self.draw_item_cursor()
 
@@ -218,30 +222,39 @@ class Inventory():
 
     def draw_items(self):
         """Draws the items in the inventory and equipment"""
-        for sublist in self.inv_grid:
-            for item in sublist:
-                if item:
-                    self.surface.blit(item.item_sprite,
-                                      (4 + item.pos[0] * 64, 23 + item.pos[1] * 64))
-        for item in self.equipment:
-            if item:
-                self.surface.blit(item.item_sprite,
-                                  (4 + item.pos[0] * 64, 327))
+        # Drawing each item in inventory
+        [self.surface.blit(item.item_sprite, (4 + item.pos[0] * 64, 23 + item.pos[1] * 64))
+         for sublist in self.inv_grid for item in sublist if item is not None]
+        # Drawing each item in the equipment
+        [self.surface.blit(item.item_sprite, (4 + item.pos[0] * 64, 327))
+         for item in self.equipment if item is not None]
 
     def draw_item_desc(self):
         """Draws the current item desc"""
-        for sublist in self.inv_grid:
-            for item in sublist:
-                if item and item.display_desc:
-                    item.item_desc.draw_desc()
-                    self.bis.blit(
-                        item.item_desc.surface, (4 + item.item_desc.x * 64, 23 + item.item_desc.y * 64))
-
-        for item in self.equipment:
-            if item and item.display_desc:
-                item.item_desc.draw_desc()
-                self.bis.blit(
-                    item.item_desc.surface, (4 + item.item_desc.x * 64, item.item_desc.y + 327))
+        # If we currently have an item description to display
+        if self.current_desc:
+            # Recentre the rectangle of the consumables
+            # I don't do it in Item.py to avoid circular import on src.config.wiindow in the futre
+            # It's not clean and I'm aware of it
+            if self.current_desc.item.item_specs["type"] == "Consumable":
+                self.current_desc.rect.x = self.screen_position[0] + \
+                    self.surface.get_width() + 34
+                self.current_desc.rect.y = self.screen_position[1] + \
+                    self.surface.get_height() // 6 + 159
+                self.current_desc.rect.width, self.current_desc.rect.height = 128, 25
+            # Before the next "if" statement because can't blit a none object
+            self.bis.blit(self.current_desc.surface,
+                          (self.screen_position[0] + self.surface.get_width()
+                           + 30, self.screen_position[1] + self.surface.get_height() // 6))
+            # Every "draw_desc()" method returns 1 except the one for the consumables because they
+            # have a button to consume the item : they return 2 when we click out of the button to
+            # close the description
+            if self.current_desc.draw_desc() == 2:
+                self.current_desc = None
+            elif self.current_desc.draw_desc() == 3:
+                self.use_consumable()
+            elif self.current_desc.draw_desc() == 4:
+                self.game.quit()
 
     def last_position(self):
         """Finds the first position in the inventory where there is not item
@@ -272,10 +285,10 @@ class Inventory():
                 self.inv_grid[y][x] = item
             else:
                 print(
-                    f"[Inventory] : Impossible to add item {item} because inventory is full")
+                    f"[Inventory.add_items()] : Impossible to add item {item} because inventory is full")
 
     def blur_surface(self, surface):
-        """Blurs the bis blurred display"""
+        """Blurs the "bis blurred" display"""
         for i in range(1, 4):
             surface = pg.transform.smoothscale(
                 surface, (RESOLUTION[0] * i, RESOLUTION[1] * i))
@@ -284,9 +297,68 @@ class Inventory():
             surface = pg.transform.smoothscale(surface, RESOLUTION)
         return surface
 
-    def detect_item(self, mx, my):
-        """Detects if there is an item under the mouse"""
-        return self.inv_grid[self.gtoc_y(my)][self.gtoc_x(mx)] is not None
+    def close_inventory(self):
+        """Closes the inventory by setting flags to false"""
+        self.drag = False
+        self.display = False
+
+    def detect_item_inv(self, mx, my):
+        """Detects if there is an item under the mouse in the inventory"""
+        if self.gtos_x(mx) in range(*self.INV_WIDTH) and self.gtos_y(my) in range(*self.INV_HEIGHT):
+            return self.inv_grid[self.gtoc_y(my)][self.gtoc_x(mx)] is not None
+
+    def detect_item_eq(self, mx, my):
+        """Detects if there is an item under the mouse in the equipment"""
+        if self.gtos_x(mx) in range(*self.EQ_WIDTH) and self.gtos_y(my) in range(*self.EQ_HEIGHT):
+            return self.equipment[self.gtoc_x(mx)] is not None
+
+    def use_consumable(self):
+        """This functions is called whenever the player uses a consumable item :
+        it first adds health to the player and then deletes the item"""
+        self.game.player.health += int(
+            self.current_desc.item.item_specs["health_regen"])
+
+        # Verifying if we don't add too much health
+        if self.game.player.health > self.game.player.max_value["health"]:
+            self.game.player.health = self.game.player.max_value["health"]
+        # Deleting the consumable
+        self.inv_grid[self.current_desc.item.pos[1]
+                      ][self.current_desc.item.pos[0]] = None
+        del self.current_desc.item
+        self.current_desc = None
+
+    def get_equipment_stats(self):
+        """Returns a dictionnary with the bonus stats given by
+        the current items equipped"""
+        eq_stats = {
+            "damages": "0d0",
+            "dexterity": 0,
+            "defense": 0
+        }
+        for item in self.equipment:
+            if item:
+                if item.item_specs["type"] == "weapon" and ((int(item.item_specs["damages"][2]) * int(item.item_specs["damages"][0]) > int(eq_stats["damages"][2]) * int(eq_stats["damages"][0]))
+                                                            or (int(item.item_specs["damages"][2]) * int(item.item_specs["damages"][0]) == int(eq_stats["damages"][2]) * int(eq_stats["damages"][0])
+                                                                and int(item.item_specs["damages"][0]) > int(eq_stats["damages"][0]))):
+                    eq_stats["damages"] = str(item.item_specs["damages"])
+                elif item.item_specs["type"] == "armor":
+                    eq_stats["dexterity"] += int(item.item_specs["bonus_dext"])
+                    eq_stats["defense"] += int(item.item_specs["bonus_def"])
+                elif item.item_specs["type"] == "shield":
+                    eq_stats["defense"] += item.item_specs["bonus_def"]
+        return eq_stats
+
+    def get_weight(self):
+        """Returns the weight of the inventory (money not in the count)"""
+        weight = 0
+        for sublist in self.inv_grid:
+            for item in sublist:
+                if item:
+                    weight += int(item.item_specs["weight"])
+        for item in self.equipment:
+            if item:
+                weight += int(item.item_specs["weight"])
+        return weight
 
     # These functions are conversions functions : they are used to go from global mouse coords
     # to surface mouse coords (since the inventory has his own surface), global coords to case
