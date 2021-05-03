@@ -13,7 +13,7 @@ The text is generated from the player statistics
 import pygame as pg
 from src.config.assets import ingame_menus_folder, fonts_folder
 from os import path
-from src.config.colors import DESC_TEXT_COLOR, WHITE
+from src.config.colors import DESC_TEXT_COLOR, HP_GREEN, HP_RED
 from src.config.fonts import CASCADIA, CASCADIA_BOLD
 from src.interface import Text
 
@@ -104,9 +104,9 @@ class CharacterStatus():
             self.surface.blit(self.background_sprite, (0, 0))
 
             # Health bar
-            pg.draw.rect(self.surface, (115, 8, 0), (8, 466, 136, 22))
-            pg.draw.rect(self.surface, (22, 148, 20),
-                         (8, 466, self.hp_ratio * 126, 22))
+            pg.draw.rect(self.surface, HP_RED, (8, 466, 136, 22))
+            pg.draw.rect(self.surface, HP_GREEN,
+                         (8, 466, self.hp_ratio * 136, 22))
 
             # Displaying our texts
             for key, value in self.static_texts.items():

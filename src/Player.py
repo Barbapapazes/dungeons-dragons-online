@@ -107,7 +107,7 @@ class Player:
         texts displayed in game"""
         self.nickname = nickname
         self.nickname_text = Text(
-            self.game.display, RESOLUTION[0] // 2, RESOLUTION[1] // 2 - 12, self.nickname, CASCADIA, WHITE, 14, True)
+            self.game.display, RESOLUTION[0] // 2 + self.image.get_width() // 2, RESOLUTION[1] // 2 - 12, self.nickname, CASCADIA, WHITE, 14, True)
 
     def update_stats(self):
         """To update stats we need to get the equipment stats and add them to base stats"""
