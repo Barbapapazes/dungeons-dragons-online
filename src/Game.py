@@ -47,7 +47,7 @@ class Game:
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
         # ------PLAYER----- #
-        self.player = Player(self.world_map, self)
+        self.player = Player(self)
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)

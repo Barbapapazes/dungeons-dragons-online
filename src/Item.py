@@ -8,9 +8,15 @@ import pygame as pg
 import pandas
 from os import path
 from src.interface import Text
-from src.config.assets import ingame_menus_folder
+from src.config.assets import ingame_menus_folder, item_data_folder
 from src.config.fonts import CASCADIA, CASCADIA_BOLD
 from src.config.colors import DESC_TEXT_COLOR
+
+# Constants 
+NOT_CONS = 1 
+QUIT_DESC = 2
+USE_ITEM = 3
+QUIT_GAME = 4
 
 
 class Item():
@@ -28,7 +34,7 @@ class Item():
         # Flag for description display
         self.display_desc = False
 
-        # CSV Processing
+        # Dataframe "df" (two dimensional array-like structure with data, see pandas doc for more informations)
         self.df = None
 
 
@@ -36,7 +42,7 @@ class CombatItem(Item):
     """Defines a specific item class for the combat items (swords, axes, armors)"""
 
     def __init__(self, name):
-        Item.__init__(self, name)
+        super().__init__(name)
 
         # Item data
         self.item_specs = {
@@ -51,16 +57,16 @@ class CombatItem(Item):
         }
 
         # Filling item specs with the .CSV data file
-        self.item_from_csv(self.item_specs["name"])
+        self.combat_item_from_csv(self.item_specs["name"])
         self.item_rect = self.item_sprite.get_rect()
 
         # Item description
         self.item_desc = CombatItemDesc(self)
 
-    def item_from_csv(self, name):
+    def combat_item_from_csv(self, name):
         """Processes a CSV file containing data in order to create the item"""
         self.df = pandas.read_csv(
-            'src/items_data/items_data.csv', skipinitialspace=True)
+            path.join(item_data_folder, 'items_data.csv'), skipinitialspace=True)
 
         # Getting back specs, sprite, etc
         self.item_sprite = pg.image.load(
@@ -85,7 +91,7 @@ class ConsumableItem(Item):
     with only healing purposes"""
 
     def __init__(self, name):
-        Item.__init__(self, name)
+        super().__init__(name)
 
         self.item_specs = {
             "name": name,
@@ -96,16 +102,16 @@ class ConsumableItem(Item):
         }
 
         # Retrieving item specs from the .CSV data file
-        self.item_from_csv(self.item_specs["name"])
+        self.consumable_item_from_csv(self.item_specs["name"])
         self.item_rect = self.item_sprite.get_rect()
 
         # Consumable item description
         self.item_desc = ConsumableItemDesc(self)
 
-    def item_from_csv(self, name):
+    def consumable_item_from_csv(self, name):
         """Processes a CSV file to create a consumable item"""
         self.df = pandas.read_csv(
-            'src/items_data/consumables.csv', skipinitialspace=True)
+            path.join(item_data_folder,'consumables.csv'), skipinitialspace=True)
         # Getting back data
         self.item_sprite = pg.image.load(
             str(self.df[name].values[0])).convert_alpha()
@@ -120,7 +126,7 @@ class OresItem(Item):
     They have currently no use in the game since merchant is not implemented"""
 
     def __init__(self, name):
-        Item.__init__(self, name)
+        super().__init__(name)
 
         self.item_specs = {
             "name": name,
@@ -130,16 +136,16 @@ class OresItem(Item):
         }
 
         # Retrieveing item data from .CSV
-        self.item_from_csv(self.item_specs["name"])
+        self.ores_item_from_csv(self.item_specs["name"])
         self.item_rect = self.item_sprite.get_rect()
 
         # Item description for ores
         self.item_desc = OresItemDesc(self)
 
-    def item_from_csv(self, name):
+    def ores_item_from_csv(self, name):
         """Processes a CSV file to create an ore item"""
         self.df = pandas.read_csv(
-            'src/items_data/ores.csv', skipinitialspace=True)
+            path.join(item_data_folder, 'ores.csv'), skipinitialspace=True)
         # Getting back data
         self.item_sprite = pg.image.load(
             str(self.df[name].values[0])).convert_alpha()
@@ -155,7 +161,6 @@ class ItemDesc():
         self.item = item
 
         # Displaying purposes
-        self.flag = False
         self.clock = pg.time.Clock()
 
 
@@ -164,7 +169,7 @@ class CombatItemDesc(ItemDesc):
 
     def __init__(self, item):
         # Parent class constructor
-        ItemDesc.__init__(self, item)
+        super().__init__(item)
 
         # Graphical parts
         self.desc_sprite = pg.image.load(
@@ -225,22 +230,24 @@ class CombatItemDesc(ItemDesc):
 
     def draw_desc(self):
         """Draws the description on the surface (returns 1 to differenciate if the description if the description
-        of a combat item, consumable or ore)"""
+        of a combat item, consumable or ore)
+        @return "NOT_CONS" to inform the inventory it's not a consumable item (with a value of 1)
+        """
 
         # Bliting sprite
         self.surface.blit(self.desc_sprite, (0, 0))
         self.generate_item_properties()
 
         # Bliting texts
-        for key, value in self.static_texts.items():
+        for value in self.static_texts.values():
             value.display_text()
-        for key, value in self.dynamic_texts.items():
+        for value in self.dynamic_texts.values():
             value.display_text()
 
         # Displaying generic information
         self.info_text[0].display_text()
         self.info_text[1].display_text()
-        return 1
+        return NOT_CONS
 
 
 class ConsumableItemDesc(ItemDesc):
@@ -249,7 +256,7 @@ class ConsumableItemDesc(ItemDesc):
 
     def __init__(self, item):
         # Parent constructor
-        ItemDesc.__init__(self, item)
+        super().__init__(item)
 
         # The 2 different sprites
         self.desc_sprite = pg.image.load(
@@ -296,17 +303,21 @@ class ConsumableItemDesc(ItemDesc):
 
     def draw_desc(self):
         """Draws the description, and starts a loop to get the event
-        in case the user wants to use the item. This is the only class that has a "for event in..."
-        pygame loop because of the button to use the item, and this is why we need to get a different
-        return value for the drawing method to close the description if the user clicks anywhere"""
+        in case the user wants to use the item. Multiple return values because this 
+        description is interactive and uses a "for event in..." pygame loop
+        @return USE_ITEM if the user uses the item (value = 3)
+                QUIT_DESC if the user quits the description
+                QUIT_GAME if the user quits the game 
+        
+        """
 
         # Bliting background and generating item properties
         self.surface.blit(self.current_sprite, (0, 0))
         self.generate_item_properties()
 
-        for key, value in self.static_texts.items():
+        for value in self.static_texts.values():
             value.display_text()
-        for key, value in self.dynamic_texts.items():
+        for value in self.dynamic_texts.values():
             value.display_text()
 
         self.info_text[0].display_text()
@@ -322,12 +333,12 @@ class ConsumableItemDesc(ItemDesc):
             if event.type == pg.MOUSEBUTTONDOWN:
                 self.item.display_desc = False
                 if self.rect.collidepoint(event.pos):
-                    return 3  # Uses the potion (see Inventory.draw_desc())
+                    return USE_ITEM  # Uses the potion (see Inventory.draw_desc())
                 else:
                     # Quits the description (see Invnetory.draw_desc())
-                    return 2
+                    return QUIT_DESC
             if event.type == pg.QUIT:
-                return 4
+                return QUIT_GAME
 
 
 class OresItemDesc(ItemDesc):
@@ -335,7 +346,7 @@ class OresItemDesc(ItemDesc):
 
     def __init__(self, item):
         # Parent constructor
-        ItemDesc.__init__(self, item)
+        super().__init__(item)
 
         self.desc_sprite = pg.image.load(
             path.join(ingame_menus_folder, "ore_desc_box.png"))
@@ -378,9 +389,9 @@ class OresItemDesc(ItemDesc):
         self.surface.blit(self.desc_sprite, (0, 0))
         self.generate_item_properties()
 
-        for key, value in self.static_texts.items():
+        for value in self.static_texts.items():
             value.display_text()
-        for key, value in self.dynamic_texts.items():
+        for value in self.dynamic_texts.items():
             value.display_text()
 
         self.info_text[0].display_text()

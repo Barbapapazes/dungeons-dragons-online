@@ -7,16 +7,15 @@ from src.config.fonts import CASCADIA
 from random import randint
 import pygame as pg
 from os import path
-# /!\ testing purposes, to delete later
 from .Item import CombatItem, ConsumableItem, OresItem
 
 
 class Player:
     """The player class"""
 
-    def __init__(self, map, game):
+    def __init__(self, game):
         self.game = game
-        self.map = map
+        self.map = self.game.world_map
         self.image = pg.image.load("src/assets/player.png")
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
@@ -31,15 +30,15 @@ class Player:
             "constitution": 3,
             "wisdom": 3
         }
-        self.stats = {key: 0 for key, value in self.base_stats.items()}
-        print(self.stats)
+        self.stats = {key: 0 for key in self.base_stats.keys()}
+        
         self.max_value = {
             "health": 100
         }
 
         self.health = self.max_value["health"]
         self.defense = 0  # for combats
-        self.damages = ""  # for damages$
+        self.damages = ""  # for damages
         self.money = 100
 
         # Inventory and items

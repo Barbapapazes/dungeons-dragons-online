@@ -13,7 +13,7 @@ The text is generated from the player statistics
 import pygame as pg
 from src.config.assets import ingame_menus_folder, fonts_folder
 from os import path
-from src.config.colors import DESC_TEXT_COLOR, HP_GREEN, HP_RED
+from src.config.colors import DESC_TEXT_COLOR, HP_GREEN, HP_RED, WHITE
 from src.config.fonts import CASCADIA, CASCADIA_BOLD
 from src.interface import Text
 
@@ -31,8 +31,6 @@ class CharacterStatus():
 
         # Surfaces
         self.surface = pg.Surface(self.background_sprite.get_size())
-        self.bis = None
-        self.bis_blurred = None
 
         # Useful flags
         self.display = False
@@ -47,8 +45,8 @@ class CharacterStatus():
         self.dynamic_texts = {}
 
         # Health bar purpose
-        self.hp_ratio = self.game.player.health / \
-            self.game.player.max_value["health"]
+        self.hp_ratio = max(1, self.game.player.health / \
+            self.game.player.max_value["health"])
 
     def create_text(self):
         """Create the texts that go in the surface"""
@@ -56,23 +54,20 @@ class CharacterStatus():
             fonts_folder, "CascadiaCodeBold.ttf"), DESC_TEXT_COLOR, 30, True)
 
         # Generating static text
-        i = 0
-        for key, value in self.game.player.base_stats.items():
+        for i, (key, value) in enumerate(self.game.player.base_stats.items()):
             self.static_texts[key] = Text(self.surface, 110, i * 30 + 190, key[0].upper(
             ) + key[1:] + " :", CASCADIA_BOLD, DESC_TEXT_COLOR, 14, False)
-            i += 1
+        
         # Same for dynamic texts
-        i = 0
-        for key, value in self.game.player.stats.items():
+        for i, (key, value) in enumerate(self.game.player.stats.items()):
             self.dynamic_texts[key] = Text(self.surface, 280, i * 30 + 190, str(
                 value), CASCADIA, DESC_TEXT_COLOR, 14, False)
-            i += 1
-
+    
         # Money and weight
         self.dynamic_texts["money"] = Text(self.surface, 75, 30, str(self.game.player.money) + " $", path.join(
             fonts_folder, "CascadiaCodeBold.ttf"), DESC_TEXT_COLOR, 20, False)
         self.dynamic_texts["weight"] = Text(self.surface, 220, 30, str(self.game.player.inventory.get_weight(
-        )) + "kg", CASCADIA_BOLD, DESC_TEXT_COLOR, 20, False)
+        )) + " kg", CASCADIA_BOLD, DESC_TEXT_COLOR, 20, False)
 
         # Defense and damages
         self.static_texts["defense"] = Text(self.surface, 110, 400, "Defense :", path.join(
@@ -84,23 +79,24 @@ class CharacterStatus():
 
         # Health amount
         self.dynamic_texts["hp"] = Text(self.surface, 40, 477, str(self.game.player.health) + "/" + str(
-            self.game.player.max_value["health"]), CASCADIA, "#ffffff", 14, True)
+            self.game.player.max_value["health"]), CASCADIA, WHITE, 14, True)
 
     def draw(self):
         """Displays the character status menu"""
         self.flag = False
-
-        # Blurring background
+        
+        # Things to do only once "before" the display
         if self.display:
-            self.bis_blurred = self.game.display.copy()
-            self.bis_blurred = self.blur_surface(self.bis_blurred)
+            bis_blurred = self.game.display.copy()
+            bis_blurred = self.blur_surface(bis_blurred)
             self.game.player.update_stats()
-
-        while self.display:
             self.create_text()
 
+        # Displaying
+        while self.display:
+            
             # Blitting the background
-            self.bis = self.bis_blurred.copy()
+            bis = bis_blurred.copy()
             self.surface.blit(self.background_sprite, (0, 0))
 
             # Health bar
@@ -109,12 +105,12 @@ class CharacterStatus():
                          (8, 466, self.hp_ratio * 136, 22))
 
             # Displaying our texts
-            for key, value in self.static_texts.items():
+            for value in self.static_texts.values():
                 value.display_text()
-            for key, value in self.dynamic_texts.items():
+            for value in self.dynamic_texts.values():
                 value.display_text()
 
-            self.bis.blit(self.surface, self.screen_position)
+            bis.blit(self.surface, self.screen_position)
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -125,7 +121,7 @@ class CharacterStatus():
                     if event.key == pg.K_TAB:
                         self.display = False
 
-            self.game.window.blit(self.bis, (0, 0))
+            self.game.window.blit(bis, (0, 0))
             self.flag = True
             pg.display.update()
             self.clock.tick(30)
