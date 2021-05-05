@@ -9,12 +9,12 @@ from src.config.assets import menus_folder
 from src.network import Client, Network
 from src.Map import Map
 from src.Player import Player
+from src.Enemy import manage_enemy
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
 from src.config.colors import BLACK, WHITE
 from src.UI import CharacterStatus, Chat
-
 
 class Game:
     """The game class"""
@@ -48,6 +48,8 @@ class Game:
         self.world_map = Map("./src/maps/map1/map1.txt")
         # ------PLAYER----- #
         self.player = Player(self)
+        # ------ENEMY------ #
+        self.enemy_list = []
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)
@@ -76,7 +78,7 @@ class Game:
             if self.playing:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     dest = self.world_map.get_clicked_tile()
-                    if self.world_map.is_valid_tile(*dest):
+                    if self.world_map.is_walkable_tile(*dest):
                         self.player.update_path(dest)
                 if event.type == pg.KEYDOWN:
                     # If we press tab, display the character status menu
@@ -86,9 +88,7 @@ class Game:
                         self.player.inventory.display = True
                 self.chat.event_handler(event)
 
-    def change_player(self):
-        """The function to switch the current character in the game"""
-        pass
+                # Here we are checking inputs when the game is in the "playing" state
 
     def quit(self):
         """A function to properly quit the game"""
@@ -111,6 +111,7 @@ class Game:
             self.world_map.draw(self.display)
             self.world_map.draw_mini(self.display)
             self.player.move()
+            manage_enemy(self)
             self.player.draw(self.display)
             self.chat.draw(self.display)
             self.character_status.draw()

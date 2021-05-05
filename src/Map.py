@@ -135,6 +135,14 @@ class Map:
         display.blit(self.minimap, (self.s_width
                                     - self.minimap_size[0] - 4, 4))
 
+    def is_visible_tile(self, numX, numY):
+        "Return if the tile is displayed"
+        lim_X_left = self.centered_in[0] - self.nb_tileX // 2
+        lim_X_right = self.centered_in[0] + self.nb_tileX // 2
+        lim_Y_left = self.centered_in[1] - self.nb_tileY // 2
+        lim_Y_right = self.centered_in[1] + self.nb_tileY // 2
+        return ((lim_X_left <= numX <= lim_X_right) and (lim_Y_left <= numY <= lim_Y_right))
+
     def get_clicked_tile(self):
         """Return the clicked tile"""
         m_posX, m_posY = pg.mouse.get_pos()
@@ -144,9 +152,26 @@ class Map:
             (self.nb_tileY // 2) + (m_posY // TILE_SIZE) - 1
         return((m_posX, m_posY))
 
+    def get_relative_tile_pos(self, X, Y):
+        "Return the position of the tile on the screen (top left tile being 0,0)"
+        relX = X - (self.centered_in[0] - (self.nb_tileX // 2) - 1)
+        relY = Y - (self.centered_in[1] - (self.nb_tileY // 2) - 1)
+        return (relX, relY)
+
     def is_valid_tile(self, numX, numY):
         """Return if a tile is a valid number on the map"""
         return ((0 <= numX < len(self.map[1])) and (0 <= numY < len(self.map)))
+
+    def is_walkable_tile(self, numX, numY):
+        "Return if a creature can walk the tile"
+        return (self.is_valid_tile(numX, numY) and not self.map[numY][numX].wall)
+
+    def get_free_tile(self):
+        "Return a random walkable tile "
+        X, Y = -1, -1
+        while not self.is_walkable_tile(X, Y):
+            X, Y = randint(0, len(self.map[0])), randint(0, len(self.map))
+        return (X, Y)
 
     def simple_neigh(self, X, Y):
         """Return list of around tile, not minding void and wall"""
@@ -163,22 +188,25 @@ class Map:
         side_list = {'U': (X, Y - 1), 'D': (X, Y + 1),
                      'L': (X - 1, Y), 'R': (X + 1, Y)}
         for action, tile in side_list.items():
-            if not self.map[tile[1]][tile[0]].wall:
+            if self.is_walkable_tile(*tile):
                 around.append((tile, action))
 
         # + tester si DL UL UR DR sont des murs
-        if not self.map[side_list['U'][1]][side_list['U'][0]].wall:
-            if not self.map[side_list['L'][1]][side_list['L'][0]].wall:
+        if self.is_walkable_tile(side_list['U'][0], side_list['U'][1]):
+            if self.is_walkable_tile(side_list['L'][0], side_list['L'][1]) \
+                    and self.is_walkable_tile(corner_list['UL'][0], corner_list['UL'][1]):
                 around.append((corner_list['UL'], 'UL'))
-            if not self.map[side_list['R'][1]][side_list['R'][0]].wall:
+            if self.is_walkable_tile(side_list['R'][0], side_list['R'][1]) \
+                    and self.is_walkable_tile(corner_list['UR'][0], corner_list['UR'][1]):
                 around.append((corner_list['UR'], 'UR'))
 
-        if not self.map[side_list['D'][1]][side_list['D'][0]].wall:
-            if not self.map[side_list['L'][1]][side_list['L'][0]].wall:
+        if self.is_walkable_tile(side_list['D'][0], side_list['D'][1]):
+            if self.is_walkable_tile(side_list['L'][0], side_list['L'][1]) \
+                    and self.is_walkable_tile(corner_list['DL'][0], corner_list['DL'][1]):
                 around.append((corner_list['DL'], 'DL'))
-            if not self.map[side_list['R'][1]][side_list['R'][0]].wall:
+            if self.is_walkable_tile(side_list['R'][0], side_list['R'][1]) \
+                    and self.is_walkable_tile(corner_list['DR'][0], corner_list['DR'][1]):
                 around.append((corner_list['DR'], 'DR'))
-
         return around
 
 
