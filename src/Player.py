@@ -3,7 +3,7 @@ from src.utils.astar import bfs
 from src.UI.Inventory import Inventory
 from src.interface import Text
 from src.config.colors import WHITE
-from src.config.fonts import CASCADIA
+from src.config.fonts import CASCADIA_BOLD
 from random import randint
 import pygame as pg
 from os import path
@@ -16,7 +16,13 @@ class Player:
     def __init__(self, game):
         self.game = game
         self.map = self.game.world_map
-        self.image = pg.image.load("src/assets/player.png")
+        self.image = pg.image.load("src/assets/player.png").convert_alpha()
+
+        # Surface with a 25 pixels offset for the nickname 
+        self.surface = pg.Surface(RESOLUTION)
+        self.surface.set_colorkey((0,0,0))
+        self.surface.blit(self.image, (RESOLUTION[0] // 2, RESOLUTION[1] //2))
+
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
         self.futur_steps = []  # Will contain list of tile to go trough
@@ -59,8 +65,8 @@ class Player:
     def draw(self, display):
         """Draw the player on the display"""
         s_width, s_height = RESOLUTION
-        display.blit(self.image, (s_width // 2, s_height // 2))
-        self.nickname_text.display_text()
+        display.blit(self.surface, (0,0))
+        
 
     def take_damage(self, damage):
         """Give damage to player"""
@@ -106,7 +112,8 @@ class Player:
         texts displayed in game"""
         self.nickname = nickname
         self.nickname_text = Text(
-            self.game.display, RESOLUTION[0] // 2 + self.image.get_width() // 2, RESOLUTION[1] // 2 - 12, self.nickname, CASCADIA, WHITE, 14, True)
+            self.surface, RESOLUTION[0]//2 + self.image.get_width()//2, RESOLUTION[1] //2 , self.nickname, CASCADIA_BOLD, WHITE, 15, True)
+        self.nickname_text.display_text()
 
     def update_stats(self):
         """To update stats we need to get the equipment stats and add them to base stats"""
