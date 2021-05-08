@@ -1,0 +1,8 @@
+Axe,Sword,Wooden Shield,Steel Shield,Great Bow,Recurve Bow,Spear,Rapier,Mace,Saber,Trident,Basic Armor,Plate Armor,Dagger,Crossbow,Longsword,Armored Coat,Rosewood Armor,Magic Wand,Spell books,Greater Staff,Explorer's Outfit,Mage's Cap,,,Nom
+src/assets/items/axe.png,src/assets/items/sword.png,src/assets/items/wooden_shield.png,src/assets/items/steel_shield.png,src/assets/items/greatbow.png,src/assets/items/recurvebow.png,src/assets/items/spear.png,src/assets/items/rapier.png,src/assets/items/mace.png,src/assets/items/saber.png,src/assets/items/trident.png,src/assets/items/basic_armor.png,src/assets/items/plate_armor.png,src/assets/items/dagger.png,src/assets/items/crossbow.png,src/assets/items/longsword.png,src/assets/items/armord_coat.png,src/assets/items/rosewood_coat.png,src/assets/items/magic_wand.png,src/assets/items/spell_book.png,src/assets/items/greaterstaff.png,src/assets/items/explorer_outfit.png,src/assets/items/mage_cape.png,,,
+Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Warrior,Rogue,Rogue,Rogue,Rogue,"Rogue ",Sorcerer,Sorcerer,Sorcerer,Sorcerer,Sorcerer,,,Classe
+weapon,weapon,shield,shield,weapon,weapon,weapon,weapon,weapon,weapon,weapon,armor,armor,weapon,weapon,weapon,armor,armor,weapon,weapon,weapon,armor,armor,,,Type
+10,15,5,10,50,20,1,40,40,1,15,100,150,12,35,15,40,50,11,20,40,60,100,,,Coût
+6,5,3,6,6,3,2,8,14,2,10,45,60,1,4,4,8,15,4,2,6,4,6,,,Poids
+1d6,1d6,2,4,1d7,1d5,1d4,2d4,2d4,1d4,1d6,6,8,1d4,1d6,1d6,2,2,1d4,1d5,1d6,4,6,,,Dé/Défense donnée
+,,,,,,,,,,,2,4,,,,3,6,,,,4,5,,,Dexterité donnée

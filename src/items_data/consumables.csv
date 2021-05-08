@@ -1,0 +1,6 @@
+Medicinal Herb,Small Potion,Large Potion
+src/assets/items/medicinal_herb.png,src/assets/items/lhp.png,src/assets/items/ghp.png
+Consumable,Consumable,Consumable
+1,1,1
+10,40,75
+1,3,6

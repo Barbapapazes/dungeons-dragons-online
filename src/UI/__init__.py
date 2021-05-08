@@ -1,2 +1,3 @@
-from .log import Log
-from .chat import Chat
+from .Log import Log
+from .Chat import Chat
+from .CharacterStatus import CharacterStatus

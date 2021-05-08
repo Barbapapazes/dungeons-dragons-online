@@ -1,6 +1,6 @@
 """Module that contains the Log class"""
 import pygame as pg
-from src.config.colors import GREY, WHITE
+from src.config.colors import GREY, WHITE, INPUT_BOX_DARK_BROWN
 
 
 class Log:
@@ -18,12 +18,13 @@ class Log:
         self.pos = position
         self.quest = quest
         self.text_color = text_color
-        self.title_color = (204, 153, 51)
+        self.title_color = INPUT_BOX_DARK_BROWN
         self.font_size = size
         self.font = pg.font.SysFont("Cascadia code", size)
         self.log_list = []
         self.background = pg.Surface(
-            (self.width, self.height), pg.SRCALPHA, 32)
+            (self.width, self.height))
+        self.background.set_alpha(220)
         self.rect = pg.Rect(*position, width, height)
         self.scroll = 0
         self.line_cpt = 0
@@ -40,7 +41,7 @@ class Log:
         """function used to draw the log on the surf gave in args"""
         if self.combat:
             self.update = False
-            self.background.fill(GREY)
+            self.background.fill(INPUT_BOX_DARK_BROWN)
         else:
             self.background = pg.Surface(
                 (self.width, self.height), pg.SRCALPHA, 32)
@@ -79,7 +80,7 @@ class Log:
                             5,
                             self.height
                             - ((self.line_cpt - self.scroll) - j)
-                            * self.font_size,
+                            * self.font_size - 5,
                         ),
                     )
 

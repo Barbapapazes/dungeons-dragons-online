@@ -1,35 +1,72 @@
 from src.config.window import RESOLUTION
 from src.utils.astar import bfs
+from src.UI.Inventory import Inventory
+from src.interface import Text
+from src.config.colors import WHITE
+from src.config.fonts import CASCADIA_BOLD
 from random import randint
 import pygame as pg
+from os import path
+from .Item import CombatItem, ConsumableItem, OresItem
 
 
 class Player:
-    def __init__(self, map):
-        self.map = map
-        self.image = pg.image.load("src/assets/player.png")
+    """The player class"""
+
+    def __init__(self, game):
+        self.game = game
+        self.map = self.game.world_map
+        self.image = pg.image.load("src/assets/player.png").convert_alpha()
+
+        # Surface with a 25 pixels offset for the nickname 
+        self.surface = pg.Surface(RESOLUTION)
+        self.surface.set_colorkey((0,0,0))
+        self.surface.blit(self.image, (RESOLUTION[0] // 2, RESOLUTION[1] //2))
+
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
         self.futur_steps = []  # Will contain list of tile to go trough
-        self.stats = {
-            "strength": 0,
-            "intelligence": 0,
-            "dexterity": 0,
-            "charisma": 0,
-            "constitution": 0,
-            "wisdom": 0
-        }
 
+        # Player base stats
+        self.base_stats = {
+            "strength": 3,
+            "intelligence": 3,
+            "dexterity": 3,
+            "charisma": 3,
+            "constitution": 3,
+            "wisdom": 3
+        }
+        self.stats = {key: 0 for key in self.base_stats.keys()}
+        
         self.max_value = {
             "health": 100
         }
 
         self.health = self.max_value["health"]
+        self.defense = 0  # for combats
+        self.damages = ""  # for damages
+        self.money = 100
+
+        # Inventory and items
+        self.inventory = Inventory(self.game)
+        axe = CombatItem("Axe")
+        sword = CombatItem("Sword")
+        armor = CombatItem("Plate Armor")
+        small_potion = ConsumableItem("Small Potion")
+        gold = OresItem("Gold Ore")
+        shield = CombatItem("Wooden Shield")
+        self.inventory.add_items(
+            [axe, sword, small_potion, armor, gold, shield])
+
+        # Nickname in game
+        self.nickname = ""  # the actual nickname
+        self.nickname_text = None  # The Text object displayed in game
 
     def draw(self, display):
         """Draw the player on the display"""
         s_width, s_height = RESOLUTION
-        display.blit(self.image, (s_width // 2, s_height // 2))
+        display.blit(self.surface, (0,0))
+        
 
     def take_damage(self, damage):
         """Give damage to player"""
@@ -69,3 +106,24 @@ class Player:
             step = (lastX + act_sum[action][0], lastY + act_sum[action][1])
             lastX, lastY = step
             self.futur_steps.append(step)
+
+    def set_nickname(self, nickname):
+        """Sets the nickname of the player and update the nickname 
+        texts displayed in game"""
+        self.nickname = nickname
+        self.nickname_text = Text(
+            self.surface, RESOLUTION[0]//2 + self.image.get_width()//2, RESOLUTION[1] //2 , self.nickname, CASCADIA_BOLD, WHITE, 15, True)
+        self.nickname_text.display_text()
+
+    def update_stats(self):
+        """To update stats we need to get the equipment stats and add them to base stats"""
+        # Getting back equipment stats
+        eq_stats = self.inventory.get_equipment_stats()
+        # Updating defense and damages
+        self.defense = eq_stats["defense"]
+        self.damages = eq_stats["damages"]
+        # To calculate the current stats we first get back the base stats
+        for key, value in self.base_stats.items():
+            self.stats[key] = value
+        # Adding items stats
+        self.stats["dexterity"] += eq_stats["dexterity"]
