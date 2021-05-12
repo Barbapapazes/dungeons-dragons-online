@@ -6,7 +6,7 @@ import signal
 import time
 import threading
 from src.Player import DistantPlayer
-from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE
+from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE, CHAT
 from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet, get_id_from_all_packet
 from os import path
 import traceback
@@ -145,7 +145,7 @@ class Network:
                     mover_id, target)
                 # ID + Action + str
 
-            elif action == "8":
+            elif action == CHAT:
                 self.chat_message(line)
 
     def create_connection(self, line):
@@ -198,7 +198,7 @@ class Network:
                       + ip + ":" + self.game.player_id[ip])
             self.send_message(msg, target_ip)
         # Send to the client his id and our ip:port (he will add it to his player_id dictionnary)
-        msg = str(str(self.game.own_id) + " 4 "
+        msg = str(str(self.game.own_id) + " 10 "
                   + self.ip + ":" + str(self.port) + ":" + new_id)
         self.send_message(msg, target_ip)
         # add to our player_id dictionnary his id

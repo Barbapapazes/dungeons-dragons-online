@@ -49,7 +49,7 @@ class Player:
             # local move
             self.map.centered_in = [self.tileX, self.tileY]
             # Send move to other clients
-            line = str(self.game.own_id) + " 5 " + \
+            line = str(self.game.own_id) + " 4 " + \
                 str(self.tileX) + "/" + str(self.tileY)
             if is_initialized_id(self.game.own_id):
                 self.game.client.send(line)
