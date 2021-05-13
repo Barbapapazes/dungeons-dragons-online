@@ -40,7 +40,7 @@ class MenuMain(Menu):
             self.game.current_menu = self.game.character_menu
             self.displaying = False
         if self.exit_button.is_clicked(event):
-            self.game.game_quit()
+            self.game.quit()
 
     def display_menu(self):
         """Displays the menu on our screen"""

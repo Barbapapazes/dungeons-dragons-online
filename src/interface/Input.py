@@ -1,6 +1,6 @@
 import pygame as pg
 import pyperclip
-from src.config.colors import WHITE, BROWN
+from src.config.colors import INPUT_BOX_BROWN, INPUT_BOX_LIGHT_BROWN, WHITE
 
 
 class Input(object):
@@ -14,6 +14,8 @@ class Input(object):
             font_size
         )  # avoid future bug (when font size is a float)
 
+        self.font_size = font_size
+
         self.game = game
         self.px = px - width // 2
         self.py = py - height // 2
@@ -21,7 +23,7 @@ class Input(object):
         self.width, self.height = width, height
 
         # Text color & font
-        self.color = BROWN
+        self.color = INPUT_BOX_BROWN
         self.text = text
         self.font_obj = pg.font.Font(font, font_size)
 
@@ -39,7 +41,7 @@ class Input(object):
                 self.active = not self.active
             else:
                 self.active = False
-        self.color = WHITE if self.active else BROWN
+        self.color = INPUT_BOX_LIGHT_BROWN if self.active else INPUT_BOX_BROWN
 
         # If the user is writing
         if event.type == pg.KEYDOWN:
@@ -60,14 +62,20 @@ class Input(object):
                     self.text += event.unicode
                 # Don't forget to render after all of this !
                 self.text_surface = self.font_obj.render(
-                    self.text, True, self.color
+                    self.text, True, WHITE
                 )
 
     def display_box(self):
         """This function displays our TextEntry"""
+        # Drawing a smooth background (done in an horrible way but will be fixed later)
+        s = pg.Surface((self.width, self.height))
+        s.set_alpha(100)
+        s.fill((198, 183, 146) if self.active else (156, 145, 121))
+        self.game.display.blit(s, (self.rect.x, self.rect.y))
         # Adding the text surface to our display
         self.game.display.blit(
-            self.text_surface, (self.rect.x + 5, self.rect.y + 5)
+            self.text_surface, (self.rect.x + self.font_size / 4,
+                                self.rect.y + self.font_size / 4)
         )
         # Drawing the rectangle around our TextEntry
         pg.draw.rect(self.game.display, self.color, self.rect, 2)

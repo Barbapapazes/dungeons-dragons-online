@@ -3,7 +3,7 @@ from os import path
 from pygame import color
 
 from src.config.colors import GREY
-from .log import Log
+from .Log import Log
 from src.interface.Input import Input
 import pygame as pg
 from src.config.assets import fonts_folder
@@ -20,11 +20,11 @@ class Chat:
         self.log = Log(width, height, position,
                        self.text_color, font_size, game)
         self.my_inputbox = Input(
-            game, position[1] + width // 2, position[0] + height + 50, width, 50, path.join(fonts_folder, 'ShareTechMono-Regular.ttf'), font_size, max_length=(width // font_size))
+            game, position[1] + width // 2, position[0] + height + 30, width, 50, path.join(fonts_folder, 'CascadiaCode.ttf'), font_size, max_length=(width // font_size) * 1.5)
         self.user_text = ""
         self.is_send = False
         self.text_to_send = ""
-        self.name = "You "
+        self.name = "[You]"
 
     def send_chat(self):
         """ Sending data trought the send methode of client
@@ -42,10 +42,7 @@ class Chat:
         self.log.add_log(message_to_print)
 
     def event_handler(self, event):
-        """event manager
-
-
-        """
+        """Event manager"""
 
         if event.type == pg.KEYDOWN:
 
@@ -70,7 +67,7 @@ class Chat:
         self.log.event(event)
 
     def draw(self, surface):
-        """drawing of log and input bpx 
+        """drawing of log and input box
 
         Args:
             surface : Surface where will be draw the log and the input

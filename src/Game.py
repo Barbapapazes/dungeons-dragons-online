@@ -14,8 +14,7 @@ from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
 from src.config.window import RESOLUTION
 from src.config.colors import BLACK, WHITE
-from src.UI.chat import Chat
-
+from src.UI import CharacterStatus, Chat
 
 class Game:
     """The game class"""
@@ -58,8 +57,11 @@ class Game:
         self.join_menu = MenuJoin(self)
         self.current_menu = self.main_menu
 
+        # ----INGAME MENUS---- #
+        self.character_status = CharacterStatus(self)
+
         # ----CHAT---- #
-        self.chat = Chat(400, 150, (30, 30), WHITE, 20, self)
+        self.chat = Chat(400, 180, (15, 15), WHITE, 15, self)
 
         # ----NETWORK---- #
         self.player_id = dict()
@@ -80,6 +82,12 @@ class Game:
                     dest = self.world_map.get_clicked_tile()
                     if self.world_map.is_walkable_tile(*dest):
                         self.player.update_path(dest)
+                if event.type == pg.KEYDOWN:
+                    # If we press tab, display the character status menu
+                    if event.key == pg.K_TAB:
+                        self.character_status.display = True
+                    if event.key == pg.K_i:
+                        self.player.inventory.display = True
                 self.chat.event_handler(event)
 
                 # Here we are checking inputs when the game is in the "playing" state
@@ -110,8 +118,10 @@ class Game:
             for o_player in self.other_player.values():
                 o_player.draw(self.world_map, self.display)
             self.chat.draw(self.display)
-            self.update_screen()
+            self.character_status.draw()
+            self.player.inventory.draw()
             self.check_events()
+            self.update_screen()
             self.clock.tick(30)
             self.network.server()
 
