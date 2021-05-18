@@ -131,7 +131,7 @@ class MenuJoin(Menu):
             tmp_thread.daemon = True
             # thread is launched
             tmp_thread.start()
-            print(client_ip)
+            print("[Connection] Connecting to :", client_ip)
             self.game.network.ping[client_ip] = (tmp_thread, tmp_queue)
             self.game.playing = True 
 

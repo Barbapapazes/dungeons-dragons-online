@@ -29,7 +29,7 @@ class Client:
                 print("message error")
                 return
 
-        print("client send : ", msg)
+        #print("[Client] Packet sent : ", msg)
 
         for ip in self.game.network.client_ip_port:
             # write the encoded message on the right tcpclient stdin then flush it to avoid conflict

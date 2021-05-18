@@ -365,7 +365,7 @@ class Chest(MapObject):
         player that asked for it"""
         for _ in range(len(self.loots)):
             if player.inventory.is_full():
-                print("Impossible to add items to inventory, inventory is full")
+                print("[Inventory] : Impossible to add items to inventory, inventory is full")
             item_to_add = self.loots.pop()
             player.inventory.add_items([item_to_add])
 

@@ -145,7 +145,6 @@ class Game:
 
     def distant_player_move(self, p_id, target):
         """Move the player p_id to the target pos on local game"""
-        print(self.other_player)
         exX, exY = self.other_player[int(p_id)].get_current_pos()
         self.world_map.map[exY][exX].wall = False
         self.other_player[int(p_id)].move(*target)
@@ -161,12 +160,11 @@ class Game:
             for ip, id in self.player_id.items():
                 if id==owner_id:
                     owner_ip = ip
-            print(owner_ip)
         except:
-            print("[Chests] : Player not found in id list")
+            print("[Chests] Player not found in id list")
         else:
             # Building the packet 
             msg = str(self.own_id) + " 6 " + "request_" + str(pos[0]) + "/" + str(pos[1])
             msg += "_" + str(self.player.inventory.free_slots_number())
             self.network.send_message(msg, owner_ip)
-            print("[Chests] You requested chest {0}/{1} from {2}".format(pos[0], pos[1], owner_id))
+            print("[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))

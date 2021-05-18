@@ -20,7 +20,7 @@ class Network:
         self.ip = get_ip()
         self.port = 8000
         self._server = self.create_serveur()
-        print(self.get_socket())
+        print("[Server] Socket :", self.get_socket())
 
         self.client_ip_port = set()  # is a set to avoid duplicate
         self.connections = dict()  # contains subprocess with ip:port as a key
@@ -105,7 +105,6 @@ class Network:
                 # binary flux that we need to decode before manipulate it
                 line = line.decode("ascii")
                 line = line[:-1]  # delete the final `\n`
-                print(key + " " + line)
 
         try:
             # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
@@ -159,15 +158,15 @@ class Network:
                     self.game.world_map.generate_distant_chests(parsed_data[1:])
                 # If we receivee a packet that requests one of our chests
                 if parsed_data[0] == "request":
-                    print("[Chests] : Someone requested the chest in pos", parsed_data[1:])
+                    print("[Chests] Player [{}] requested the chest at position ".format(player_id), parsed_data[1:])
                     self.handle_requested_chest(parsed_data[1:], player_id)
                 # If we receive a packet containing the items
                 if parsed_data[0] == "items":
-                    print("[Chests] : Your request has been accepted")
+                    print("[Chests] Your chest request has been accepted")
                     self.get_chests_items(parsed_data[1:])
                 # If we receive a refuse packet
                 if parsed_data[0] == "refuse":
-                    print("[Chests] : The owner refused your request, your inventory might be full")
+                    print("[Chests] Your chest request has been refused, your inventory might be full")
                     
             elif action == CHAT:
                 self.chat_message(line)
@@ -449,7 +448,7 @@ class Network:
 
     def chat_message(self, line):
         my_message = self.get_data_from(line)
-        print("my message : ", my_message)
+        print("[Chat] My message : ", my_message)
         self.game.chat.receive_chat(my_message)
 
     def send_message(self, msg: str, ip: str, chat=False):
@@ -488,7 +487,6 @@ class Network:
             for i in range(2, len(msg)):
                 my_str += msg[i] + "_"
             mylist.append(my_str)
-            print("mylist : ", mylist)
             for word in mylist:
                 word += '\n'
                 word = str.encode(word)
@@ -526,7 +524,7 @@ class Network:
                 # Sending approval packet
                 self.send_message(msg, player_ip)
                 self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
-                print("[Chests] : Accepted request from ", player_id)
+                print("[Chests] Accepted request from [{}]".format(player_id))
             else:
                 # Sending a refuse message
                 msg = str(self.game.own_id) + " 6 " + "refuse"
