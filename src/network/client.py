@@ -30,14 +30,7 @@ class Client:
                 return
 
         print("client send : ", msg)
-
-        for ip in self.game.network.client_ip_port:
-            # write the encoded message on the right tcpclient stdin then flush it to avoid conflict
-            try:
-
-                self.game.network.send_message(msg, ip, chat)
-            except BrokenPipeError:
-                pass
+        self.game.network.send_message(msg, "all", chat)
 
     def disconnect(self):
         """handle the disconnection of the player and end all the subprocess"""

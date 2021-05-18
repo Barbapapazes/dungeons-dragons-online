@@ -372,7 +372,7 @@ class Network:
         """
         msg = msg.replace("\n", "")
         print("test 1 send message", chat)
-        print("msg : ", msg)
+        print("ip : ", ip)
         if not chat:
             try:
                 check_message(msg)
