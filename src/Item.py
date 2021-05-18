@@ -17,6 +17,12 @@ NOT_CONS = 1
 QUIT_DESC = 2
 USE_ITEM = 3
 QUIT_GAME = 4
+COMBAT_ITEM = ["Axe", "Sword", "Wooden Shield", "Steel Shield", "Basic Armor", "Plate Armor", "Dagger", \
+    "Crossbow", "Longsword", "Armored Coat", "Rosewood Armor", "Magic Wand", "Spell books", "Greater Staff", "Explorer's Outfit", "Mage's Cap", \
+        "Spear", "Rapier", "Trident", "Recurve Bow", "Great Bow", "Mace", "Saber"]
+CONSUMABLE_ITEM = ["Medicinal Herb", "Small Potion", "Large Potion"]
+ORES_ITEM = ["Gold Ore", "Crystal"]
+
 
 
 class Item():
@@ -389,9 +395,9 @@ class OresItemDesc(ItemDesc):
         self.surface.blit(self.desc_sprite, (0, 0))
         self.generate_item_properties()
 
-        for value in self.static_texts.items():
+        for value in self.static_texts.values():
             value.display_text()
-        for value in self.dynamic_texts.items():
+        for value in self.dynamic_texts.values():
             value.display_text()
 
         self.info_text[0].display_text()

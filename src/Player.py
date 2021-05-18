@@ -66,7 +66,7 @@ class Player:
     def draw(self, display):
         """Draw the player on the display"""
         s_width, s_height = RESOLUTION
-        display.blit(self.surface, (0,0))
+        display.blit(self.image, (s_width // 2, s_height // 2))
         
 
     def take_damage(self, damage):
@@ -138,6 +138,7 @@ class Player:
             self.stats[key] = value
         # Adding items stats
         self.stats["dexterity"] += eq_stats["dexterity"]
+        
 class DistantPlayer:
     def __init__(self):
         self.image = pg.image.load("src/assets/extern_player.png")

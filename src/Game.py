@@ -12,7 +12,7 @@ from src.Player import Player
 from src.Enemy import manage_enemy
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
-from src.config.window import RESOLUTION
+from src.config.window import RESOLUTION, TILE_SIZE
 from src.config.colors import BLACK, WHITE
 from src.UI import CharacterStatus, Chat
 
@@ -46,6 +46,8 @@ class Game:
 
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
+        # Chest list 
+        self.chest_list = []
         # ------PLAYER----- #
         self.player = Player(self)
         self.other_player = dict()  # key is the client id, value is a DistantPlayer instance
@@ -79,9 +81,25 @@ class Game:
                 self.current_menu.check_events(event)
             if self.playing:
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    dest = self.world_map.get_clicked_tile()
-                    if self.world_map.is_walkable_tile(*dest):
-                        self.player.update_path(dest)
+                    if event.button==3:
+                        # Moving the player
+                        dest = self.world_map.get_clicked_tile()
+                        if self.world_map.is_walkable_tile(*dest):
+                            self.player.update_path(dest)
+                    if event.button==1:
+                        # Using a chest
+                        pX, pY = self.player.tileX, self.player.tileY
+                        tileX, tileY = self.world_map.get_clicked_tile()
+                        if  self.world_map.is_visible_tile(tileX, tileY) and \
+                                self.world_map.local_chests[tileY][tileX] and \
+                                self.world_map.local_chests[tileY][tileX].activable(pX, pY):
+                            # Here give the loots
+                            self.world_map.local_chests[tileY][tileX].use_chest(self.player)
+                        if  self.world_map.is_visible_tile(tileX, tileY) and \
+                                self.world_map.dist_chests[tileY][tileX] and \
+                                self.world_map.dist_chests[tileY][tileX].activable(pX, pY):
+                            # Here give the loots
+                            self.request_chest((tileX, tileY))
                 if event.type == pg.KEYDOWN:
                     # If we press tab, display the character status menu
                     if event.key == pg.K_TAB:
@@ -133,3 +151,22 @@ class Game:
         self.other_player[int(p_id)].move(*target)
         newX, newY = target
         self.world_map.map[newY][newX].wall = True
+
+    def request_chest(self, pos):
+        """Requests a distant chest on the map
+        and sends a packet to the owner of the chest"""
+        owner_id = self.world_map.dist_chests[pos[1]][pos[0]].owner_id
+        owner_ip = ""
+        try:
+            for ip, id in self.player_id.items():
+                if id==owner_id:
+                    owner_ip = ip
+            print(owner_ip)
+        except:
+            print("[Chests] : Player not found in id list")
+        else:
+            # Building the packet 
+            msg = str(self.own_id) + " 6 " + "request_" + str(pos[0]) + "/" + str(pos[1])
+            msg += "_" + str(self.player.inventory.free_slots_number())
+            self.network.send_message(msg, owner_ip)
+            print("[Chests] You requested chest {0}/{1} from {2}".format(pos[0], pos[1], owner_id))

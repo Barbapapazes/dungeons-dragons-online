@@ -77,8 +77,7 @@ class MenuCharacter(Menu):
         Args:
             event (Event): a pygame event
         """
-        if self.create_button.is_clicked(event):
-            self.name_input.handle_events(event)
+        self.name_input.handle_events(event)
         if self.play_button.is_clicked(event) and self.name_input.get_text():
             self.game.menu_running = False
             # unpause the server
@@ -90,6 +89,7 @@ class MenuCharacter(Menu):
         if self.join_button.is_clicked(event):
             self.game.current_menu = self.game.join_menu
             self.displaying = False
+            self.game.player.set_nickname(self.name_input.get_text())
         if self.return_button.is_clicked(event):
             self.game.current_menu = self.game.main_menu
             self.displaying = False
