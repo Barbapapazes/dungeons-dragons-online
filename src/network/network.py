@@ -6,6 +6,7 @@ import signal
 import time
 import threading
 from src.Player import DistantPlayer
+from src.Map import dict_img_obj
 from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE, CHAT, CHEST
 from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet, get_id_from_all_packet
 from src.Item import CONSUMABLE_ITEM, COMBAT_ITEM, ORES_ITEM, CombatItem, ConsumableItem, OresItem
@@ -167,6 +168,9 @@ class Network:
                 # If we receive a refuse packet
                 if parsed_data[0] == "refuse":
                     print("[Chests] Your chest request has been refused, your inventory might be full")
+                # If we receive an update packet
+                if parsed_data[0] == "update":
+                    self.update_chests(parsed_data[1:])
                     
             elif action == CHAT:
                 self.chat_message(line)
@@ -233,7 +237,6 @@ class Network:
         self.init_player_pos(target_ip)
         self.init_chests_pos(target_ip)
         
-
     def generate_new_id(self):
         if len(self.game.player_id) > 0:
             # get last id and add 1 to it
@@ -524,7 +527,13 @@ class Network:
                 # Sending approval packet
                 self.send_message(msg, player_ip)
                 self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
+                self.game.world_map.local_chests[pos[1]][pos[0]].image = dict_img_obj["chestO"].convert_alpha()
+                self.game.world_map.local_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
                 print("[Chests] Accepted request from [{}]".format(player_id))
+
+                # Sending packet to update chest for everyone 
+                udpate_msg = str(self.game.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
+                self.send_global_message(udpate_msg)
             else:
                 # Sending a refuse message
                 msg = str(self.game.own_id) + " 6 " + "refuse"
@@ -543,5 +552,16 @@ class Network:
                 new_item = OresItem(item_name)
             self.game.player.inventory.add_items([new_item])
 
+    def update_chests(self, parsed_data):
+        """Updates a chest that has been opened"""
+        pos = tuple(map(int, parsed_data[0].split("/")))
+        if self.game.world_map.local_chests[pos[1]][pos[0]]:
+            self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
+            self.game.world_map.local_chests[pos[1]][pos[0]].image = dict_img_obj["chestO"].convert_alpha()
+            self.game.world_map.local_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
+        else:
+            self.game.world_map.dist_chests[pos[1]][pos[0]].is_opened = True
+            self.game.world_map.dist_chests[pos[1]][pos[0]].image = dict_img_obj["d_chestO"].convert_alpha()
+            self.game.world_map.dist_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
         
 

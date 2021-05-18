@@ -92,12 +92,15 @@ class Game:
                         tileX, tileY = self.world_map.get_clicked_tile()
                         if  self.world_map.is_visible_tile(tileX, tileY) and \
                                 self.world_map.local_chests[tileY][tileX] and \
-                                self.world_map.local_chests[tileY][tileX].activable(pX, pY):
+                                self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
+                                self.world_map.local_chests[tileY][tileX].is_opened:
                             # Here give the loots
                             self.world_map.local_chests[tileY][tileX].use_chest(self.player)
+                            self.send_update_chests((tileX, tileY))
                         if  self.world_map.is_visible_tile(tileX, tileY) and \
                                 self.world_map.dist_chests[tileY][tileX] and \
-                                self.world_map.dist_chests[tileY][tileX].activable(pX, pY):
+                                self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
+                                self.world_map.dist_chests[tileY][tileX].is_opened:
                             # Here give the loots
                             self.request_chest((tileX, tileY))
                 if event.type == pg.KEYDOWN:
@@ -112,6 +115,7 @@ class Game:
 
     def quit(self):
         """A function to properly quit the game"""
+        print("[Game] Quiting game ...")
         self.running, self.playing = False, False
         self.current_menu.displaying = False
         self.client.disconnect()
@@ -168,3 +172,8 @@ class Game:
             msg += "_" + str(self.player.inventory.free_slots_number())
             self.network.send_message(msg, owner_ip)
             print("[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))
+    
+    def send_update_chests(self, pos):
+        """Sends an update when opening a local chest"""
+        udpate_msg = str(self.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
+        self.network.send_global_message(udpate_msg)
