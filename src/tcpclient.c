@@ -15,6 +15,13 @@
 #include <fcntl.h>
 #include "serialization.h"
 
+#define MAX_CLIENT 200
+struct ip_socket
+{
+    char ip_port[80];
+    int socket_fd;
+};
+
 /**
  * @brief stop the process if an error occurs and print the error
  * 
@@ -35,7 +42,6 @@ void end(int signum)
 
 int connection(char *ip, char *port)
 {
-    printf("connection _%s_ _%s_ \n", ip, port);
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //create a new tcp socket
     struct timeval timeout;
     timeout.tv_sec = 0.1;
@@ -105,12 +111,40 @@ int connection(char *ip, char *port)
         if (opt)
         {
             errno = opt;
-            printf("test\n");
-            printf("%d\n", opt);
             stop("opt");
         }
     }
     return sockfd;
+}
+
+int array_search(struct ip_socket *client, char *key)
+{
+
+    for (int i = 0; i < MAX_CLIENT; i++)
+    {
+        if (((client + i) != NULL) && (strcmp(client[i].ip_port, key) == 0))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+int first_available_socket(struct ip_socket *client)
+{
+    for (int i = 0; i < MAX_CLIENT; i++)
+    {
+        if (client[i].socket_fd == 0)
+            return i;
+    }
+    return -1;
+}
+
+void print_all_connection(struct ip_socket *client)
+{
+    for (int i = 0; i < MAX_CLIENT; i++)
+    {
+        printf("%s : %d\n", client[i].ip_port, client[i].socket_fd);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -122,12 +156,19 @@ int main(int argc, char *argv[])
     char buffer[80];
 
     /* Socket */
-    int socket_list[2000];
     int current_socket = 0;
+
+    struct ip_socket *client;
+    client = calloc(MAX_CLIENT, sizeof(struct ip_socket));
     size_t size;
+    char *ip;
+    char *port;
+    int client_index = -1;
+    int send_all = 0;
 
     /* Ping */
-    struct timeval ping_in, ping_out;
+    struct timeval ping_in,
+        ping_out;
 
     /* Packet */
     unsigned char *s_packet;
@@ -143,48 +184,85 @@ int main(int argc, char *argv[])
             stop("getline()");
         if (stdin_read[0] == '!')
         {
-            stdin_read++;
-            char *ip = strtok(stdin_read, " ");
-            char *port = strtok(NULL, " ");
+            ip = strtok(stdin_read + 1, ":");
+            port = strtok(NULL, ":");
+            memset(buffer, 0, 80);
             port[strlen(port) - 1] = '\0';
-            socket_list[current_socket] = connection(ip, port);
-            current_socket++;
+            sprintf(buffer, "%s:%s", ip, port);
+            if ((current_socket = first_available_socket(client)) == -1)
+                break;
+            strcpy(client[current_socket].ip_port, buffer);
+            client[current_socket].socket_fd = connection(ip, port);
+            memset(stdin_read, 0, size);
+            print_all_connection(client);
         }
-        // else
-        // {
-        //     game_data.player_id = strtol(stdin_read, &end, 10);
+        else if (stdin_read[0] == '-')
+        {
+            if (strlen(stdin_read) > 0)
+                stdin_read[strlen(stdin_read) - 1] = '\0';
+            if ((client_index = array_search(client, stdin_read + 1)) == -1)
+                return -1;
+            ip = strtok(stdin_read + 1, ":");
+            port = strtok(NULL, ":");
+            memset(buffer, 0, 80);
+            if (close(client[client_index].socket_fd) == -1)
+                stop("close socket");
+            client[client_index]
+                .socket_fd = 0;
+            client[client_index].ip_port[0] = '\0';
 
-        //     if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
-        //         stop("getline()");
+            memset(stdin_read, 0, size);
+            print_all_connection(client);
+        }
+        else
+        {
+            if (strlen(stdin_read) > 0)
+                stdin_read[strlen(stdin_read) - 1] = '\0';
+            printf("std _%s_\n", stdin_read);
+            if (strcmp(stdin_read, "all") == 0)
+                send_all = 1;
+            else if ((client_index = array_search(client, stdin_read)) == -1)
+                return -1;
 
-        //     game_data.action = strtol(stdin_read, &end, 10);
+            if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
+                stop("getline()");
 
-        //     if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
-        //         stop("getline()");
+            game_data.player_id = strtol(stdin_read, &end, 10);
 
-        //     game_data.data = strdup(stdin_read); //duplicate so the data won't have the same adress as stdin_read and we can modify it
+            if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
+                stop("getline()");
 
-        //     // format packet
-        //     s_packet = serialize_packet(game_data);
-        //     packet_length = 3 * sizeof(int) + strlen(game_data.data); // check serialization for more details
+            game_data.action = strtol(stdin_read, &end, 10);
 
-        //     if (send(sockfd, s_packet, packet_length, 0) == -1) // send the message
-        //         stop("send()");
+            if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
+                stop("getline()");
 
-        //     gettimeofday(&ping_in, NULL); // get time in s and µs when the packet has been sent
+            game_data.data = strdup(stdin_read); //duplicate so the data won't have the same adress as stdin_read and we can modify it
 
-        //     if (recv(sockfd, buffer, 2, 0) == -1) //wait for a server response
-        //         stop("send()");
+            // format packet
+            s_packet = serialize_packet(game_data);
+            packet_length = 3 * sizeof(int) + strlen(game_data.data); // check serialization for more details
+            if (send_all)
+            {
+                for (int i = 0; i < MAX_CLIENT; i++)
+                    if (client[i].socket_fd != 0)
+                        if (send(client[i].socket_fd, s_packet, packet_length, 0) == -1) // send the message
+                            stop("send()");
+            }
+            else if (send(client[client_index].socket_fd, s_packet, packet_length, 0) == -1) // send the message
+                stop("send()");
 
-        //     // get time in s and µs when the packet has been received
-        //     gettimeofday(&ping_out, NULL);
-        //     sprintf(buffer, "ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec);
-        //     write(STDOUT_FILENO, buffer, strlen(buffer));
-        // }
+            // gettimeofday(&ping_in, NULL); // get time in s and µs when the packet has been sent
+
+            // if (recv(client[client_index].socket_fd, buffer, 2, 0) == -1) //wait for a server response
+            //     stop("send()");
+
+            // // get time in s and µs when the packet has been received
+            // gettimeofday(&ping_out, NULL);
+            // sprintf(buffer, "ping : %lu us\n", (ping_out.tv_sec - ping_in.tv_sec) * 1000000 + ping_out.tv_usec - ping_in.tv_usec);
+            // write(STDOUT_FILENO, buffer, strlen(buffer));
+        }
     }
-
-    // if (close(sockfd) == -1) // close file descriptor
-    //     stop("close");
 
     exit(EXIT_SUCCESS);
 }

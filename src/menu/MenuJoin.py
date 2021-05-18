@@ -5,6 +5,7 @@ import threading
 import time
 import os
 import signal
+import socket
 from os import path
 
 
@@ -27,8 +28,16 @@ class MenuJoin(Menu):
             path.join(menus_folder, "background.png")
         ).convert_alpha()
 
-        self.input_text = Text(self.game.display, self.game.resolution[0] // 2, self.game.resolution[1] // 2
-                               - 35, "Enter IP to join a game :", path.join(fonts_folder, "CascadiaCode.ttf"), WHITE, 15, True)
+        self.input_text = Text(
+            self.game.display,
+            self.game.resolution[0] // 2,
+            self.game.resolution[1] // 2 - 35,
+            "Enter IP to join a game :",
+            path.join(fonts_folder, "CascadiaCode.ttf"),
+            WHITE,
+            15,
+            True,
+        )
 
         self.ip_input = Input(
             self.game,
@@ -95,17 +104,17 @@ class MenuJoin(Menu):
             tmp = client_ip.split(":")
             if len(tmp) != 2:
                 return
-            # initialize a connection to ip contained in sys.argv[2]
-            tmp_proc = subprocess.Popen(
-                ["./src/tcpclient", tmp[0], tmp[1]],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            time.sleep(0.11)
-            poll = tmp_proc.poll()
-            if poll is not None:
+            if not self.isOpen(tmp[0], tmp[1]):
                 return
+            print("client", client_ip)
+            # initialize a connection to ip contained in sys.argv[2]
+            self.game.network._client.stdin.write(
+                str.encode("!" + client_ip + "\n")
+            )
+
+            if not self.isOpen(tmp[0], tmp[1]):
+                return
+            self.game.network._client.stdin.flush()
             self.displaying = False
             self.game.menu_running = False
             self.game.playing = True
@@ -115,26 +124,15 @@ class MenuJoin(Menu):
             # split the ip:port to obtains ip and port
             tmp = client_ip.split(":")
             # initialize a connection to ip contained in sys.argv[2]
-            self.game.network.connections[client_ip] = tmp_proc
             # encode in binary a message that contains : first + client ip:port
-            msg = str(str(self.game.own_id) + " 0 " + str(self.game.network.ip)
-                      + ":" + str(self.game.network.port))
-            self.game.network.send_message(msg, client_ip)
-
-            # queue.Queue() is a queue FIFO (First In First Out) with an unlimied size
-            tmp_queue = queue.Queue()
-            tmp_thread = threading.Thread(
-                target=enqueue_output,
-                args=(
-                    self.game.network.connections[client_ip].stdout, tmp_queue),
+            msg = str(
+                str(self.game.own_id)
+                + " 0 "
+                + str(self.game.network.ip)
+                + ":"
+                + str(self.game.network.port)
             )
-
-            # the thread will die with the end of the main procus
-            tmp_thread.daemon = True
-            # thread is launched
-            tmp_thread.start()
-            print(client_ip)
-            self.game.network.ping[client_ip] = (tmp_thread, tmp_queue)
+            self.game.network.send_message(msg, client_ip)
 
     def display_menu(self):
         """Displays the menu on our screen"""
@@ -154,3 +152,12 @@ class MenuJoin(Menu):
 
             self.display_to_game()
             self.game.clock.tick(30)
+
+    def isOpen(self, ip, port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        t = s.connect_ex((ip, int(port)))
+        s.close()
+        if t == 0:
+            return True
+        return False

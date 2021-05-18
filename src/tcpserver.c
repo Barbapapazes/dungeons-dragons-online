@@ -123,6 +123,8 @@ int main(int argc, char *argv[])
 
                 // ensure that buffer has a final character
                 buffer[n] = '\0';
+                if (strcmp(buffer, "") == 0)
+                    break;
 
                 // format the packet received
                 game_data = deserialize_packet((unsigned char *)buffer);

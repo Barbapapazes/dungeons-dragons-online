@@ -1,12 +1,25 @@
-
 import subprocess
 import os
 import queue
 import signal
 import time
 import threading
-from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE
-from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet
+from src.config.network import (
+    CLIENT_PATH,
+    SERVER_PATH,
+    FIRST_CONNECTION,
+    NEW_IP,
+    DISCONNECT,
+    CHANGE_ID,
+    MOVE,
+)
+from src.utils.network import (
+    enqueue_output,
+    get_ip,
+    check_message,
+    get_id_from_packet,
+    get_ip_from_packet,
+)
 from os import path
 import traceback
 
@@ -17,11 +30,22 @@ class Network:
         self.ip = get_ip()
         self.port = 8000
         self._server = self.create_serveur()
+        self._client = self.create_client()
+        # queue.Queue() is a queue FIFO (First In First Out) with an unlimited size
+        tmp_queue = queue.Queue()
+        tmp_thread = threading.Thread(
+            target=enqueue_output,
+            args=(self._client.stdout, tmp_queue),
+        )
+
+        # the thread will die with the end of the main procuss
+        tmp_thread.daemon = True
+        # thread is launched
+        tmp_thread.start()
+        self.ping = (tmp_thread, tmp_queue)
         print(self.get_socket())
 
         self.client_ip_port = set()  # is a set to avoid duplicate
-        self.connections = dict()  # contains subprocess with ip:port as a key
-        self.ping = dict()  # contains multiple thread to read tcpclient
         # contains all player_id associated to their ip
 
         self.q = queue.Queue()
@@ -65,6 +89,15 @@ class Network:
         # poll check if the process has ended or not. If the process is running the None is returned
         return self.check_server(server)
 
+    def create_client(self):
+        client = subprocess.Popen(
+            [CLIENT_PATH],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return client
+
     def check_server(self, server):
         """Check is the server is created
 
@@ -93,16 +126,16 @@ class Network:
     def server(self):
         """interprets the server's output"""
         # try to get something from each tcpclient process
-        for key in self.ping:
-            try:
-                line = self.ping[key][1].get(timeout=0.001)
-            except queue.Empty:
-                pass
-            else:
-                # binary flux that we need to decode before manipulate it
-                line = line.decode("ascii")
-                line = line[:-1]  # delete the final `\n`
-                print(key + " " + line)
+
+        try:
+            line = self.ping[1].get(timeout=0.001)
+        except queue.Empty:
+            pass
+        else:
+            # binary flux that we need to decode before manipulate it
+            line = line.decode("ascii")
+            line = line[:-1]  # delete the final `\n`
+            print(line)
 
         try:
             # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
@@ -146,28 +179,8 @@ class Network:
         # if line[1] not in self.players:
         #     self.players[line[1]] = Player()
         ip = get_ip_from_packet(line)
-        # data is of the form "ip:port:id"
-        ip_array = ip.split(":")
-        if len(ip_array) not in [2, 3]:
-            return
-        self.connections[ip] = subprocess.Popen(
-            [CLIENT_PATH, ip_array[0], ip_array[1]],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        # queue.Queue() is a queue FIFO (First In First Out) with an unlimited size
-        tmp_queue = queue.Queue()
-        tmp_thread = threading.Thread(
-            target=enqueue_output,
-            args=(self.connections[ip].stdout, tmp_queue),
-        )
-
-        # the thread will die with the end of the main procuss
-        tmp_thread.daemon = True
-        # thread is launched
-        tmp_thread.start()
-        self.ping[ip] = (tmp_thread, tmp_queue)
+        self._client.stdin.write(str.encode("!" + ip + "\n"))
+        self._client.stdin.flush()
 
     def first_connection(self, line):
         """Define what the program does when a new connection occurres
@@ -184,20 +197,31 @@ class Network:
             new_id = str(self.game.own_id + 1)
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
-            msg = str(str(self.game.own_id) + " 2 "
-                      + target_ip + ":" + new_id)
+            msg = str(str(self.game.own_id) + " 2 " + target_ip + ":" + new_id)
             self.send_message(msg, ip)
 
         for ip in self.client_ip_port:
             # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
-            msg = str(str(self.game.own_id) + " 2 "
-                      + ip + ":" + self.game.player_id[ip])
+            msg = str(
+                str(self.game.own_id)
+                + " 2 "
+                + ip
+                + ":"
+                + self.game.player_id[ip]
+            )
             self.send_message(msg, target_ip)
 
         # Send to the client his id and our ip:port (he will add it to his player_id dictionnary)
-        msg = str(str(self.game.own_id) + " 4 "
-                  + self.ip + ":" + str(self.port) + ":" + new_id)
+        msg = str(
+            str(self.game.own_id)
+            + " 4 "
+            + self.ip
+            + ":"
+            + str(self.port)
+            + ":"
+            + new_id
+        )
         self.send_message(msg, target_ip)
         # add to our player_id dictionnary his id
         self.game.player_id[target_ip] = new_id
@@ -247,8 +271,8 @@ class Network:
         try:
             client = self.get_data_from(line)
             self.remove_from_client(client)
-            self.kill(client)
-            self.remove_connexion(client)
+            # self.kill(client)
+            # self.remove_connexion(client)
         except Exception as e:
             print("Error disconnect", e)
         # delete the player so it is not blit anymore
@@ -348,6 +372,7 @@ class Network:
         """
         msg = msg.replace("\n", "")
         print("test 1 send message", chat)
+        print("msg : ", msg)
         if not chat:
             try:
                 check_message(msg)
@@ -355,13 +380,14 @@ class Network:
                 return
 
             msg = msg.split(" ")
-
+            self._client.stdin.write(str.encode(ip + "\n"))
+            self._client.stdin.flush()
             for word in msg:
-                word += '\n'
+                word += "\n"
                 word = str.encode(word)
-                self.connections[ip].stdin.write(word)
-                self.connections[ip].stdin.flush()
-        if(chat):
+                self._client.stdin.write(word)
+                self._client.stdin.flush()
+        if chat:
 
             msg = msg.split(" ")
             # Creation of a list with the data we want to send
@@ -376,8 +402,10 @@ class Network:
                 my_str += msg[i] + "_"
             mylist.append(my_str)
             print("mylist : ", mylist)
+            self._client.stdin.write(str.encode(ip + "\n"))
+            self._client.stdin.flush()
             for word in mylist:
-                word += '\n'
+                word += "\n"
                 word = str.encode(word)
-                self.connections[ip].stdin.write(word)
-                self.connections[ip].stdin.flush()
+                self._client.stdin.write(word)
+                self._client.stdin.flush()
