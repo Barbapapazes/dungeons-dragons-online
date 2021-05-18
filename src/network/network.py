@@ -247,13 +247,20 @@ class Network:
         return new_id
 
     def init_player_pos(self, target_ip):
-        """Send the position of all player to the new client to init other_player position
+        """Sends our position to the new player
         """
+        # Send the position of other players 
+        for id, player in self.game.other_player.items():
+            pX, pY = player.get_current_pos()
+            pos_msg = str(id) + " 4 " + str(pX) + "/" + str(pY)
+            print(pos_msg)
+            self.send_message(pos_msg, target_ip)
+
         # Send our current position to the new connexion
         pX, pY = self.game.player.get_current_pos()
         pos_msg = str(self.game.own_id) + " 4 " + str(pX) + "/" + str(pY)
         self.send_message(pos_msg, target_ip)
-    
+        
     def init_chests_pos(self, target_ip):
         """Sends the position of chests to the new client to init the chests positions"""
         # LOCAL CHESTS
@@ -306,7 +313,7 @@ class Network:
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
         self.game.other_player[int(id)] = DistantPlayer()
-        print("New connection : [", id, "] ", ip)
+        print("[Server] New connection [" + id + "] ", "with ip :", ip)
         try:
             self.add_to_clients(ip)
         except Exception as e:
@@ -428,26 +435,7 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
-        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
-    
-    def send_chests(self):
-        """This function is called when a client connects to 
-        the host of the game, after the ID change. It sends to 
-        every other players the position of the client local chests"""
-
-        local_chests_pos = self.game.world_map.local_chests_pos
-        local_chests = self.game.world_map.local_chests
-
-        # Updating chests ID
-        for pos in local_chests_pos:
-            local_chests[pos[1]][pos[0]].owner_id = self.game.own_id
-
-        pos_msg = str(self.game.own_id) + " 6 " + "positions"
-        # Formatting and adding the message every local chest pos
-        for chest_pos in local_chests_pos:
-            pos_msg += "_" + str(chest_pos[0]) + "/" + str(chest_pos[1]) + "/" + str(self.game.own_id)
-        # Sending packet
-        self.game.network.send_global_message(pos_msg)        
+        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()       
 
     def chat_message(self, line):
         my_message = self.get_data_from(line)
@@ -500,7 +488,28 @@ class Network:
         """Sends a message to everyone"""
         for player_ip in self.game.network.connections.keys():
             self.send_message(msg, player_ip)
+
+    ### -- CHESTS RELATED -- ###
     
+    def send_chests(self):
+        """This function is called when a client connects to 
+        the host of the game, after the ID change. It sends to 
+        every other players the position of the new client local chests"""
+
+        local_chests_pos = self.game.world_map.local_chests_pos
+        local_chests = self.game.world_map.local_chests
+
+        # Updating chests ID
+        for pos in local_chests_pos:
+            local_chests[pos[1]][pos[0]].owner_id = self.game.own_id
+
+        pos_msg = str(self.game.own_id) + " 6 " + "positions"
+        # Formatting and adding the message every local chest pos
+        for chest_pos in local_chests_pos:
+            pos_msg += "_" + str(chest_pos[0]) + "/" + str(chest_pos[1]) + "/" + str(self.game.own_id)
+        # Sending packet
+        self.game.network.send_global_message(pos_msg) 
+
     def handle_requested_chest(self, parsed_data, player_id):
         """Handles a chest request"""
         pos = tuple(map(int, parsed_data[0].split("/")))

@@ -149,11 +149,20 @@ class Game:
 
     def distant_player_move(self, p_id, target):
         """Move the player p_id to the target pos on local game"""
-        exX, exY = self.other_player[int(p_id)].get_current_pos()
-        self.world_map.map[exY][exX].wall = False
-        self.other_player[int(p_id)].move(*target)
-        newX, newY = target
-        self.world_map.map[newY][newX].wall = True
+        try:
+            exX, exY = self.other_player[int(p_id)].get_current_pos()
+            self.world_map.map[exY][exX].wall = False
+            self.other_player[int(p_id)].move(*target)
+            newX, newY = target
+            self.world_map.map[newY][newX].wall = True
+        # This exception will be triggered when the player receives
+        # his own movement, because when someone connects we send him
+        # every other movement of other players which he is in
+        # I didn't find a way to make it easier and I think just ignoring
+        # when you get your own movement is a good way to proceed
+        except KeyError: 
+            pass 
+
 
     def request_chest(self, pos):
         """Requests a distant chest on the map

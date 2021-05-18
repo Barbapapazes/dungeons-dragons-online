@@ -67,7 +67,6 @@ class Player:
         """Draw the player on the display"""
         s_width, s_height = RESOLUTION
         display.blit(self.image, (s_width // 2, s_height // 2))
-        
 
     def take_damage(self, damage):
         """Give damage to player"""
@@ -88,7 +87,7 @@ class Player:
             line = str(self.game.own_id) + " 4 " + \
                 str(self.tileX) + "/" + str(self.tileY)
             if is_initialized_id(self.game.own_id):
-                self.game.client.send(line)
+                self.game.network.send_global_message(line)
 
     def get_current_pos(self):
         "Return X, Y the current position"
