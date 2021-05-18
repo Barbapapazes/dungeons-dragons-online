@@ -40,12 +40,20 @@ void end(int signum)
     exit(EXIT_SUCCESS);
 }
 
+/**
+ * @brief create a new connection to the ip + port specified. It checks the socket's layer to detect any error.
+ * @return int : socket_fd 
+ */
 int connection(char *ip, char *port)
 {
     int sockfd = socket(PF_INET, SOCK_STREAM, 0); //create a new tcp socket
+
+    // set a timeout in case the connection takes to long
     struct timeval timeout;
     timeout.tv_sec = 0.1;
     timeout.tv_usec = 0;
+
+    // vars that will contains errors if one occures
     int res, opt;
 
     // prepare the server struct
@@ -68,8 +76,11 @@ int connection(char *ip, char *port)
     if (fcntl(sockfd, F_SETFL, opt | O_NONBLOCK) < 0)
         stop("socket");
 
+    // try to connect to the server
     if ((res = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(struct sockaddr))) < 0)
     {
+
+        // if the socket is not yet writable
         if (errno == EINPROGRESS)
         {
             fd_set wait_set;
@@ -117,6 +128,10 @@ int connection(char *ip, char *port)
     return sockfd;
 }
 
+/**
+ * @brief seach for the key given in the client array
+ * @return int : index of the key or -1 if the key is not present
+ */
 int array_search(struct ip_socket *client, char *key)
 {
 
@@ -129,7 +144,12 @@ int array_search(struct ip_socket *client, char *key)
     }
     return -1;
 }
-int first_available_socket(struct ip_socket *client)
+
+/**
+ * @brief return the first available index to store a new connection
+ * @return int : index
+ */
+int first_available_socket_index(struct ip_socket *client)
 {
     for (int i = 0; i < MAX_CLIENT; i++)
     {
@@ -139,6 +159,10 @@ int first_available_socket(struct ip_socket *client)
     return -1;
 }
 
+/**
+ * @brief print all current connections that are saved in the client array mostly used to debug
+ * 
+ */
 void print_all_connection(struct ip_socket *client)
 {
     for (int i = 0; i < MAX_CLIENT; i++)
@@ -157,14 +181,13 @@ int main(int argc, char *argv[])
 
     /* Socket */
     int current_socket = 0;
-
     struct ip_socket *client;
     client = calloc(MAX_CLIENT, sizeof(struct ip_socket));
     size_t size;
     char *ip;
     char *port;
     int client_index = -1;
-    int send_all = 0;
+    int send_all = 0; // boolean if == 1 send data to each client
 
     /* Ping */
     struct timeval ping_in,
@@ -182,25 +205,29 @@ int main(int argc, char *argv[])
         // the python program will send data by line block
         if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
             stop("getline()");
+
+        // New connection
         if (stdin_read[0] == '!')
         {
             ip = strtok(stdin_read + 1, ":");
             port = strtok(NULL, ":");
             memset(buffer, 0, 80);
-            port[strlen(port) - 1] = '\0';
+            port[strlen(port) - 1] = '\0'; // remove the \n from the string
             sprintf(buffer, "%s:%s", ip, port);
-            if ((current_socket = first_available_socket(client)) == -1)
+            if ((current_socket = first_available_socket_index(client)) == -1)
                 break;
             strcpy(client[current_socket].ip_port, buffer);
             client[current_socket].socket_fd = connection(ip, port);
             memset(stdin_read, 0, size);
             print_all_connection(client);
         }
+
+        // remove connection
         else if (stdin_read[0] == '-')
         {
             if (strlen(stdin_read) > 0)
-                stdin_read[strlen(stdin_read) - 1] = '\0';
-            if ((client_index = array_search(client, stdin_read + 1)) == -1)
+                stdin_read[strlen(stdin_read) - 1] = '\0';                   // remove the \n from the string
+            if ((client_index = array_search(client, stdin_read + 1)) == -1) // stdin_read + 1 to remove the fist char without affecting the string
                 return -1;
             ip = strtok(stdin_read + 1, ":");
             port = strtok(NULL, ":");
@@ -214,26 +241,31 @@ int main(int argc, char *argv[])
             memset(stdin_read, 0, size);
             print_all_connection(client);
         }
+
+        // send data
         else
         {
+            // get ip to send to
             if (strlen(stdin_read) > 0)
-                stdin_read[strlen(stdin_read) - 1] = '\0';
-            printf("std _%s_\n", stdin_read);
+                stdin_read[strlen(stdin_read) - 1] = '\0'; // remove the \n from the string
             if (strcmp(stdin_read, "all") == 0)
                 send_all = 1;
             else if ((client_index = array_search(client, stdin_read)) == -1)
                 return -1;
 
+            // get id
             if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
                 stop("getline()");
 
             game_data.player_id = strtol(stdin_read, &end, 10);
 
+            //get action
             if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
                 stop("getline()");
 
             game_data.action = strtol(stdin_read, &end, 10);
 
+            // get data
             if (getline(&stdin_read, &size, stdin) == -1) //get a line on stdin (BLOCKING function)
                 stop("getline()");
 
