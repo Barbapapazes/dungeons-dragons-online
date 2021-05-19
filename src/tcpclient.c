@@ -14,13 +14,107 @@
 #include <errno.h>
 #include <fcntl.h>
 #include "serialization.h"
+#define HASHSIZE 2003
 
-#define MAX_CLIENT 200
-struct ip_socket
-{
-    char ip_port[80];
-    int socket_fd;
+struct nlist
+{                       /* table entry: */
+    struct nlist *next; /* next entry in chain */
+    char *name;         /* defined name */
+    int value;          /* replacement text */
 };
+
+static struct nlist *hashtab[HASHSIZE]; /* pointer table */
+
+/* hash: form hash value for string s */
+unsigned hash(char *s)
+{
+    unsigned hashval;
+    for (hashval = 0; *s != '\0'; s++)
+        hashval = *s + 101 * hashval;
+    return hashval % HASHSIZE;
+}
+
+/* lookup: look for s in hashtab */
+struct nlist *lookup(char *s)
+{
+    struct nlist *np;
+    for (np = hashtab[hash(s)]; np != NULL; np = np->next)
+    {
+        if (strcmp(s, np->name) == 0)
+            return np; /* found */
+    }
+    return NULL; /* not found */
+}
+
+char *hash_strdup(char *);
+// install: put (name, defn) in hashtab
+void install(char *name, int value)
+{
+    struct nlist *np;
+    unsigned hashval;
+    if ((np = lookup(name)) == NULL)
+    { /* not found */
+        np = (struct nlist *)malloc(sizeof(*np));
+        if (np == NULL || (np->name = hash_strdup(name)) == NULL)
+            return;
+        hashval = hash(name);
+        np->next = hashtab[hashval];
+        hashtab[hashval] = np;
+    }
+    np->value = value;
+    return;
+}
+
+// remove (name,value) from hashtab handle link between linked list
+int uninstall(char *name, int value)
+{
+    struct nlist *np, *prev;
+    prev = NULL;
+    unsigned hashval;
+    if (lookup(name) == NULL)
+    { /* not found */
+        printf("not found\n");
+        return -1;
+    }
+    hashval = hash(name);
+    np = hashtab[hashval];
+
+    do
+    {
+        if (strcmp(np->name, name) == 0)
+        {
+
+            if ((np->next != NULL) && (prev == NULL))
+
+                hashtab[hashval] = np->next;
+
+            else if (np->next)
+
+                prev->next = np->next;
+
+            else if (prev)
+
+                prev->next = NULL;
+
+            else
+                hashtab[hashval] = NULL;
+            free(np);
+            return 0;
+        }
+        prev = np;
+
+    } while ((np = np->next) != NULL);
+    return -1;
+}
+
+char *hash_strdup(char *s) /* make a duplicate of s */
+{
+    char *p;
+    p = (char *)malloc(strlen(s) + 1); /* +1 for ’\0’ */
+    if (p != NULL)
+        strcpy(p, s);
+    return p;
+}
 
 /**
  * @brief stop the process if an error occurs and print the error
@@ -132,43 +226,39 @@ int connection(char *ip, char *port)
  * @brief seach for the key given in the client array
  * @return int : index of the key or -1 if the key is not present
  */
-int array_search(struct ip_socket *client, char *key)
-{
-
-    for (int i = 0; i < MAX_CLIENT; i++)
-    {
-        if (((client + i) != NULL) && (strcmp(client[i].ip_port, key) == 0))
-        {
-            return i;
-        }
-    }
-    return -1;
-}
 
 /**
  * @brief return the first available index to store a new connection
  * @return int : index
  */
-int first_available_socket_index(struct ip_socket *client)
-{
-    for (int i = 0; i < MAX_CLIENT; i++)
-    {
-        if (client[i].socket_fd == 0)
-            return i;
-    }
-    return -1;
-}
 
 /**
  * @brief print all current connections that are saved in the client array mostly used to debug
  * 
  */
-void print_all_connection(struct ip_socket *client)
+void print_all_connection()
 {
-    for (int i = 0; i < MAX_CLIENT; i++)
-    {
-        printf("%s : %d\n", client[i].ip_port, client[i].socket_fd);
-    }
+
+    struct nlist *np;
+    for (int i = 0; i < HASHSIZE; i++)
+        if (((np = hashtab[i]) && (np->name)))
+            do
+            {
+                if (strcmp(np->name, ""))
+                    printf("%d _%s_ : _%d_ :: _%d_ \n", strcmp(np->name, ""), np->name, np->value, hash(np->name));
+            } while ((np = np->next) != NULL);
+}
+
+void send_to_all_connection(unsigned char *s_packet, int packet_length)
+{
+    struct nlist *np;
+    for (int i = 0; i < HASHSIZE; i++)
+        if (((np = hashtab[i]) && (np->name)))
+            do
+            {
+                if (send(hashtab[i]->value, s_packet, packet_length, 0) == -1) // send the message
+                    stop("send()");
+            } while ((np = np->next) != NULL);
 }
 
 int main(int argc, char *argv[])
@@ -180,18 +270,14 @@ int main(int argc, char *argv[])
     char buffer[80];
 
     /* Socket */
-    int current_socket = 0;
-    struct ip_socket *client;
-    client = calloc(MAX_CLIENT, sizeof(struct ip_socket));
+    struct nlist *socket;
     size_t size;
     char *ip;
     char *port;
-    int client_index = -1;
     int send_all = 0; // boolean if == 1 send data to each client
 
     /* Ping */
-    struct timeval ping_in,
-        ping_out;
+    // struct timeval ping_in, ping_out;
 
     /* Packet */
     unsigned char *s_packet;
@@ -214,32 +300,25 @@ int main(int argc, char *argv[])
             memset(buffer, 0, 80);
             port[strlen(port) - 1] = '\0'; // remove the \n from the string
             sprintf(buffer, "%s:%s", ip, port);
-            if ((current_socket = first_available_socket_index(client)) == -1)
-                break;
-            strcpy(client[current_socket].ip_port, buffer);
-            client[current_socket].socket_fd = connection(ip, port);
+            install(buffer, connection(ip, port));
             memset(stdin_read, 0, size);
-            print_all_connection(client);
         }
 
         // remove connection
         else if (stdin_read[0] == '-')
         {
             if (strlen(stdin_read) > 0)
-                stdin_read[strlen(stdin_read) - 1] = '\0';                   // remove the \n from the string
-            if ((client_index = array_search(client, stdin_read + 1)) == -1) // stdin_read + 1 to remove the fist char without affecting the string
+                stdin_read[strlen(stdin_read) - 1] = '\0'; // remove the \n from the string
+            if ((socket = lookup(stdin_read + 1)) == NULL) // stdin_read + 1 to remove the fist char without affecting the string
                 return -1;
-            ip = strtok(stdin_read + 1, ":");
-            port = strtok(NULL, ":");
-            memset(buffer, 0, 80);
-            if (close(client[client_index].socket_fd) == -1)
+            if (close(socket->value) == -1)
                 stop("close socket");
-            client[client_index]
-                .socket_fd = 0;
-            client[client_index].ip_port[0] = '\0';
+            if (uninstall(socket->name, socket->value) == -1)
+                stop("uninstall");
+            memset(buffer, 0, 80);
 
             memset(stdin_read, 0, size);
-            print_all_connection(client);
+            print_all_connection();
         }
 
         // send data
@@ -250,7 +329,7 @@ int main(int argc, char *argv[])
                 stdin_read[strlen(stdin_read) - 1] = '\0'; // remove the \n from the string
             if (strcmp(stdin_read, "all") == 0)
                 send_all = 1;
-            else if ((client_index = array_search(client, stdin_read)) == -1)
+            else if ((socket = lookup(stdin_read)) == NULL) // stdin_read + 1 to remove the fist char without affecting the string
                 return -1;
 
             // get id
@@ -276,12 +355,9 @@ int main(int argc, char *argv[])
             packet_length = 3 * sizeof(int) + strlen(game_data.data); // check serialization for more details
             if (send_all)
             {
-                for (int i = 0; i < MAX_CLIENT; i++)
-                    if (client[i].socket_fd != 0)
-                        if (send(client[i].socket_fd, s_packet, packet_length, 0) == -1) // send the message
-                            stop("send()");
+                send_to_all_connection(s_packet, packet_length);
             }
-            else if (send(client[client_index].socket_fd, s_packet, packet_length, 0) == -1) // send the message
+            else if (send(socket->value, s_packet, packet_length, 0) == -1) // send the message
                 stop("send()");
 
             // gettimeofday(&ping_in, NULL); // get time in s and µs when the packet has been sent
