@@ -133,17 +133,18 @@ class Inventory():
                     self.origin = [1, self.gtoc_x(mx), 0]
                     self.equipment[self.gtoc_x(mx)] = None
 
-            # Starting drag and drop
-            self.drag = True
-            # Calculating new coords for our item
-            self.current_item.item_rect.x = mx - \
-                self.screen_position[0] - \
-                self.current_item.item_rect.width // 2
-            self.current_item.item_rect.y = my - \
-                self.screen_position[1] - \
-                self.current_item.item_rect.height // 2
-            # Displaying item on cursor when it's clicked
-            self.draw_item_cursor()
+            if self.current_item: 
+                # Starting drag and drop
+                self.drag = True
+                # Calculating new coords for our item
+                self.current_item.item_rect.x = mx - \
+                    self.screen_position[0] - \
+                    self.current_item.item_rect.width // 2
+                self.current_item.item_rect.y = my - \
+                    self.screen_position[1] - \
+                    self.current_item.item_rect.height // 2
+                # Displaying item on cursor when it's clicked
+                self.draw_item_cursor()
         ### -------- IF AN ITEM IS RELEASED -------- ###
         elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
             self.drag = False
