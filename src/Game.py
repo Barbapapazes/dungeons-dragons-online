@@ -90,17 +90,11 @@ class Game:
                         # Using a chest
                         pX, pY = self.player.tileX, self.player.tileY
                         tileX, tileY = self.world_map.get_clicked_tile()
-                        if  self.world_map.is_visible_tile(tileX, tileY) and \
-                                self.world_map.local_chests[tileY][tileX] and \
-                                self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
-                                self.world_map.local_chests[tileY][tileX].is_opened:
+                        if  self.is_chest_clickable("local", (pX, pY), (tileX, tileY)):
                             # Here give the loots
                             self.world_map.local_chests[tileY][tileX].use_chest(self.player)
                             self.send_update_chests((tileX, tileY))
-                        if  self.world_map.is_visible_tile(tileX, tileY) and \
-                                self.world_map.dist_chests[tileY][tileX] and \
-                                self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
-                                self.world_map.dist_chests[tileY][tileX].is_opened:
+                        if  self.is_chest_clickable("dist", (pX, pY), (tileX, tileY)):
                             # Here give the loots
                             self.request_chest((tileX, tileY))
                 if event.type == pg.KEYDOWN:
@@ -148,7 +142,12 @@ class Game:
             self.network.server()
 
     def distant_player_move(self, p_id, target):
-        """Move the player p_id to the target pos on local game"""
+        """Moves a distant player on the map
+
+        Args:
+            p_id (str/int): the player ID
+            target (tuple(int)): the position where he needs to move
+        """
         try:
             exX, exY = self.other_player[int(p_id)].get_current_pos()
             self.world_map.map[exY][exX].wall = False
@@ -163,10 +162,15 @@ class Game:
         except KeyError: 
             pass 
 
-
+    ### -- CHEST RELATED -- ###
+    
     def request_chest(self, pos):
-        """Requests a distant chest on the map
-        and sends a packet to the owner of the chest"""
+        """Sends a request to the player which owns
+        the chest to get what's inside of it 
+
+        Args:
+            pos (tuple(int)): the position of the chest
+        """
         owner_id = self.world_map.dist_chests[pos[1]][pos[0]].owner_id
         owner_ip = ""
         try:
@@ -183,6 +187,40 @@ class Game:
             print("[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))
     
     def send_update_chests(self, pos):
-        """Sends an update when opening a local chest"""
+        """Sends an update to other players when you
+        open your own local chest
+
+        Args:
+            pos (tuple(int)): position of the chest
+        """
         udpate_msg = str(self.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
         self.network.send_global_message(udpate_msg)
+
+    def is_chest_clickable(self, type, pos, tiles):
+        """Verifies if a chest is clickable by testing 
+        if it exists/is in range/is empty...
+
+        Args:
+            type (str): either "local" or "dist" for the type of chest
+            pos (tuple(int)): the position of the player
+            tiles (tuple(int)): the tile on which the chest is 
+
+        Returns:
+            [type]: [description]
+        """
+        
+        tileX, tileY = tiles 
+        pX, pY = pos 
+
+        # Local chests
+        if type=="local":   
+            return self.world_map.is_visible_tile(tileX, tileY) and \
+                    self.world_map.local_chests[tileY][tileX] and \
+                    self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
+                    self.world_map.local_chests[tileY][tileX].is_opened
+        # Distant chests
+        elif type=="dist":
+            return self.world_map.is_visible_tile(tileX, tileY) and \
+                    self.world_map.dist_chests[tileY][tileX] and \
+                    self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
+                    self.world_map.dist_chests[tileY][tileX].is_opened

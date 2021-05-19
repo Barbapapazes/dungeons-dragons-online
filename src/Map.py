@@ -284,17 +284,19 @@ class Map:
         (t['L'] and ((t['DR'] and not t['R'] and not(t['U'] and t['D']))or (t['UL'] and not t['R'] and not(t['U'] and t['D'])))) or \
         (t['R'] and ((t['UL'] and not t['L'] and not(t['D'] and t['U']))or (t['DL'] and not t['L'] and not(t['D'] and t['U'])))))
     
-    def generate_distant_chests(self, positions):
-        """Generate distant chests from list"""
+    def generate_distant_chests(self, parsed_data):
+        """Creates the distant chests from a 
+        parsed data (which is something that lookes like : 
+        "positions_13/3/10_12/23/11_1/1/12...")
+        """
         # Adding to the list of distant chest position every chest position
-        for string in positions:
+        for string in parsed_data:
             string = string.split("/")
             owner_id = string[2]
             position = tuple(map(int, (string[0], string[1])))
             self.dist_chests_pos.append(position)
             self.dist_chests[position[1]][position[0]] = DistantChest(position, owner_id)
             self.map[position[1]][position[0]].wall = True
-
 
 class MapObject:
     """A class of object on map"""

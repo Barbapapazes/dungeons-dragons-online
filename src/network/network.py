@@ -137,7 +137,7 @@ class Network:
                 self.change_id(line)
                 # We send chests after the ID has been changed 
                 # otherwise, the chests IDs are -1 !
-                self.send_chests()
+                self.send_own_chests()
 
             # if a movement is received
             elif action == MOVE:
@@ -154,21 +154,21 @@ class Network:
                 player_id = get_id_from_all_packet(line)
                 data = self.get_data_from(line)
                 parsed_data = data.split("_")
-                # If we receive a packet composed of all chests positions
+                # If we receive a packet composed of all chests positions ("positions_13/2/10_12/1/11...")
                 if parsed_data[0] == "positions":
                     self.game.world_map.generate_distant_chests(parsed_data[1:])
-                # If we receivee a packet that requests one of our chests
-                if parsed_data[0] == "request":
+                # If we receivee a packet that requests one of our chests ("request_13/13_10...")
+                if parsed_data[0] == "request": 
                     print("[Chests] Player [{}] requested the chest at position ".format(player_id), parsed_data[1:])
                     self.handle_requested_chest(parsed_data[1:], player_id)
-                # If we receive a packet containing the items
+                # If we receive a packet containing the items ("items_Plate/Armor_Axe_Sword...")
                 if parsed_data[0] == "items":
                     print("[Chests] Your chest request has been accepted")
                     self.get_chests_items(parsed_data[1:])
-                # If we receive a refuse packet
+                # If we receive a refuse packet ("refuse")
                 if parsed_data[0] == "refuse":
                     print("[Chests] Your chest request has been refused, your inventory might be full")
-                # If we receive an update packet
+                # If we receive an update packet ("update_13/20"")
                 if parsed_data[0] == "update":
                     self.update_chests(parsed_data[1:])
                     
@@ -233,7 +233,7 @@ class Network:
         self.send_message(msg, target_ip)
         # add to our player_id dictionnary his id
         self.game.player_id[target_ip] = new_id
-        # Sending position of chest and players to the new ip
+        # Sending position of chests and players to the new ip
         self.init_player_pos(target_ip)
         self.init_chests_pos(target_ip)
         
@@ -262,7 +262,13 @@ class Network:
         self.send_message(pos_msg, target_ip)
         
     def init_chests_pos(self, target_ip):
-        """Sends the position of chests to the new client to init the chests positions"""
+        """First sends the position of local chests
+        and then the position of distant chests to the connecting
+        player
+
+        Args:
+            target_ip (str): IP+port of the connection player
+        """
         # LOCAL CHESTS
         local_chests_pos = self.game.world_map.local_chests_pos
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
@@ -485,16 +491,22 @@ class Network:
                 self.connections[ip].stdin.flush()
 
     def send_global_message(self, msg):
-        """Sends a message to everyone"""
+        """SOON DEPRECATED
+        A function that sends to every other player in the game
+        instead of juste one
+
+        Args:
+            msg (str): the message/packet to send
+        """
         for player_ip in self.game.network.connections.keys():
             self.send_message(msg, player_ip)
 
     ### -- CHESTS RELATED -- ###
     
-    def send_chests(self):
+    def send_own_chests(self):
         """This function is called when a client connects to 
-        the host of the game, after the ID change. It sends to 
-        every other players the position of the new client local chests"""
+        the host of the game, after the ID change (to get the right owner ID for
+        chests). It sends to every other players the position of the new client local chests"""
 
         local_chests_pos = self.game.world_map.local_chests_pos
         local_chests = self.game.world_map.local_chests
@@ -511,7 +523,12 @@ class Network:
         self.game.network.send_global_message(pos_msg) 
 
     def handle_requested_chest(self, parsed_data, player_id):
-        """Handles a chest request"""
+        """Handles what to do when receiving a chest request
+
+        Args:
+            parsed_data (str): the parsed data
+            player_id ([type]): id of the player that requested the chest
+        """
         pos = tuple(map(int, parsed_data[0].split("/")))
         inv_slots = parsed_data[1]
         
@@ -535,12 +552,13 @@ class Network:
                 
                 # Sending approval packet
                 self.send_message(msg, player_ip)
+                # Updating own world to make the chest opened
                 self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
                 self.game.world_map.local_chests[pos[1]][pos[0]].image = dict_img_obj["chestO"].convert_alpha()
                 self.game.world_map.local_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
                 print("[Chests] Accepted request from [{}]".format(player_id))
 
-                # Sending packet to update chest for everyone 
+                # Sending packet to update chest for everyone (actually update = inform that a chest is opened)
                 udpate_msg = str(self.game.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
                 self.send_global_message(udpate_msg)
             else:
@@ -549,8 +567,12 @@ class Network:
                 self.send_message(msg, player_ip)
 
     def get_chests_items(self, parsed_data):
-        """Transform items given in a packet into
-        items for the player"""
+        """Transforms the parsed packet data containing item
+        names into real items for us
+
+        Args:
+            parsed_data (str): the parsed packet data
+        """
         for item in parsed_data:
             item_name = str(item).replace("/", " ")
             if item_name in COMBAT_ITEM:
@@ -562,7 +584,12 @@ class Network:
             self.game.player.inventory.add_items([new_item])
 
     def update_chests(self, parsed_data):
-        """Updates a chest that has been opened"""
+        """Updates a chest when an update packet is received
+        Checks if the chest is local or distant to update it 
+
+        Args:
+            parsed_data (str): the parsed packet data
+        """
         pos = tuple(map(int, parsed_data[0].split("/")))
         if self.game.world_map.local_chests[pos[1]][pos[0]]:
             self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True

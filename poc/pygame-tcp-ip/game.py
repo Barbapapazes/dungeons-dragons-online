@@ -27,7 +27,7 @@ class Game:
         s.connect(("8.8.8.8", 80))
         tmp_ip = s.getsockname()[0]
         self.my_ip = str(str(tmp_ip) + ":" + self.my_port)
-        print("[Own IP] : ",self.my_ip)
+        print(self.my_ip)
         self.client_port = set()
 
         self.players = {}
