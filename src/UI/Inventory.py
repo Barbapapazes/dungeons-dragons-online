@@ -133,17 +133,18 @@ class Inventory():
                     self.origin = [1, self.gtoc_x(mx), 0]
                     self.equipment[self.gtoc_x(mx)] = None
 
-            # Starting drag and drop
-            self.drag = True
-            # Calculating new coords for our item
-            self.current_item.item_rect.x = mx - \
-                self.screen_position[0] - \
-                self.current_item.item_rect.width // 2
-            self.current_item.item_rect.y = my - \
-                self.screen_position[1] - \
-                self.current_item.item_rect.height // 2
-            # Displaying item on cursor when it's clicked
-            self.draw_item_cursor()
+            if self.current_item: 
+                # Starting drag and drop
+                self.drag = True
+                # Calculating new coords for our item
+                self.current_item.item_rect.x = mx - \
+                    self.screen_position[0] - \
+                    self.current_item.item_rect.width // 2
+                self.current_item.item_rect.y = my - \
+                    self.screen_position[1] - \
+                    self.current_item.item_rect.height // 2
+                # Displaying item on cursor when it's clicked
+                self.draw_item_cursor()
         ### -------- IF AN ITEM IS RELEASED -------- ###
         elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
             self.drag = False
@@ -359,6 +360,15 @@ class Inventory():
             if item:
                 weight += int(item.item_specs["weight"])
         return weight
+    
+    def free_slots_number(self):
+        """Returns the number of free slots in the inventory"""
+        count = 0 
+        for sublist in self.inv_grid:
+            for item in sublist:
+                if not item:
+                    count += 1
+        return count 
 
     # These functions are conversions functions : they are used to go from global mouse coords
     # to surface mouse coords (since the inventory has his own surface), global coords to case

@@ -30,7 +30,7 @@ class Chat:
         """ Sending data trought the send methode of client
         """
         self.game.client.send(str(self.game.own_id)
-                              + " 8 " + self.user_text, chat=True)
+                              + " 7 " + self.user_text, chat=True)
 
     def receive_chat(self, message):
         """[summary]

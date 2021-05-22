@@ -48,13 +48,13 @@ game_packet deserialize_packet(unsigned char *s_packet);
         -> 1 : Game data for those who connect or if we need to update the game state for everyone (not sure of what would be in the data yet)
         -> 2 : IP + Port + id packet
         -> 3 : Disconnect packet, with IP+Port in data
-        -> 4 : Player_id packet 
-        -> 5 : "Move" player packet with coords separated by ";" as data 
-        -> 6 : "Attack" player packet with ??? as data
-        -> 7 : "Chest opening" player packet with ??? as data
-        -> 8 : "Chat" player packet with the message to send to the chat as data
-        -> 9 : Enemies movements packet 
-        -> 10 : Enemies attack packet
+        -> 4 : Move packet 
+        -> 5 : Attack packet 
+        -> 6 : Open chest
+        -> 7 : Chatting
+        -> 8 : Move ennemies
+        -> 9 : Attack ennemies
+        -> 10 : Change ID
         -> 11 : maybe more in the future...
     --
     "data" : this string contains the action of the player, different for each value of action. It may contain IPs, movements instructions...

@@ -1,5 +1,6 @@
-from src.config.window import RESOLUTION
+from src.config.window import RESOLUTION, TILE_SIZE
 from src.utils.astar import bfs
+from src.utils.network import is_initialized_id
 from src.UI.Inventory import Inventory
 from src.interface import Text
 from src.config.colors import WHITE
@@ -65,8 +66,7 @@ class Player:
     def draw(self, display):
         """Draw the player on the display"""
         s_width, s_height = RESOLUTION
-        display.blit(self.surface, (0,0))
-        
+        display.blit(self.image, (s_width // 2, s_height // 2))
 
     def take_damage(self, damage):
         """Give damage to player"""
@@ -81,7 +81,17 @@ class Player:
         """Move the player to X,Y (counted in tiles)"""
         if len(self.futur_steps) != 0:
             self.tileX, self.tileY = self.futur_steps.pop(0)
+            # local move
             self.map.centered_in = [self.tileX, self.tileY]
+            # Send move to other clients
+            line = str(self.game.own_id) + " 4 " + \
+                str(self.tileX) + "/" + str(self.tileY)
+            if is_initialized_id(self.game.own_id):
+                self.game.network.send_global_message(line)
+
+    def get_current_pos(self):
+        "Return X, Y the current position"
+        return (self.tileX, self.tileY)
 
     def handle_event(self):
         """Check if needs to move and do so"""
@@ -109,7 +119,7 @@ class Player:
 
     def set_nickname(self, nickname):
         """Sets the nickname of the player and update the nickname 
-        texts displayed in game"""
+    texts displayed in game"""
         self.nickname = nickname
         self.nickname_text = Text(
             self.surface, RESOLUTION[0]//2 + self.image.get_width()//2, RESOLUTION[1] //2 , self.nickname, CASCADIA_BOLD, WHITE, 15, True)
@@ -127,3 +137,34 @@ class Player:
             self.stats[key] = value
         # Adding items stats
         self.stats["dexterity"] += eq_stats["dexterity"]
+        
+class DistantPlayer:
+    def __init__(self):
+        self.image = pg.image.load("src/assets/extern_player.png")
+        self.tileX = 2  # Will have to put map start point here
+        self.tileY = 2
+        self.stats = {
+            "strength": 0,
+            "intelligence": 0,
+            "dexterity": 0,
+            "charisma": 0,
+            "constitution": 0,
+            "wisdom": 0
+        }
+
+    def draw(self, map, display):
+        """Draw the player on the display"""
+        if map.is_visible_tile(self.tileX, self.tileY):
+            relativX, relativY = map.get_relative_tile_pos(
+                self.tileX, self.tileY)
+            relativX, relativY = relativX * TILE_SIZE, relativY * TILE_SIZE
+            display.blit(self.image, (relativX, relativY))
+
+    def get_current_pos(self):
+        "Return X, Y the current position"
+        return (self.tileX, self.tileY)
+
+    def move(self, X, Y):
+        self.tileX = X
+        self.tileY = Y
+    

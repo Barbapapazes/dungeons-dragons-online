@@ -5,7 +5,8 @@ import pygame as pg
 
 
 class Enemy:
-    def __init__(self, map):
+    def __init__(self, map, e_id):
+        self.id = e_id
         self.map = map
         self.image = pg.image.load("src/assets/enemy.png")
         self.tileX, self.tileY = self.map.get_free_tile()
@@ -27,7 +28,7 @@ class Enemy:
         self.health = self.max_value["health"]
 
     def draw(self, display):
-        """Draw the player on the display"""
+        """Draw the ennmy on the display"""
         if self.map.is_visible_tile(self.tileX, self.tileY):
             relativX, relativY = self.map.get_relative_tile_pos(
                 self.tileX, self.tileY)
@@ -36,7 +37,7 @@ class Enemy:
 
     def take_damage(self, damage):
         """Give damage to player"""
-        self.health -= max(0,damage)
+        self.health -= max(0, damage)
 
     def act(self):
         """Update position, wait or generate a path """
@@ -86,8 +87,11 @@ class Enemy:
 def manage_enemy(game):
     "Manage and create the enemy list"
     # Try to create a new enemy
-    if (len(game.enemy_list) <= 15) and (randint(0, 10) > 9):
-        game.enemy_list.append(Enemy(game.world_map))
+    if (len(game.enemy_list) <= 5) and (randint(0, 10) > 9):
+        e_id = len(game.enemy_list)
+        while (any(e.id == e_id for e in game.enemy_list)):
+            e_id += 1
+        game.enemy_list.append(Enemy(game.world_map, e_id))
     for e in game.enemy_list:
         e.act()
         e.draw(game.display)

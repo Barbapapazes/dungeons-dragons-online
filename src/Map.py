@@ -1,7 +1,11 @@
 from src.config.window import TILE_SIZE, RESOLUTION
-from src.config.colors import DARKBROWN
+from src.config.colors import DARKBROWN, WHITE
+from src.Item import COMBAT_ITEM, CONSUMABLE_ITEM, CombatItem, ConsumableItem, ORES_ITEM, OresItem
+from src.interface import Text
+from src.config.fonts import CASCADIA, CASCADIA_BOLD
 import pygame as pg
-from random import randint
+from random import randint, choice
+
 
 ### Tiles sprite managing ###
 wall_list = ["W", "V"]
@@ -22,8 +26,12 @@ for char in dict_tile_list:
 
 dict_img_obj = {
     "firecamp": pg.image.load("src/assets/objects/firecamp.png"),
+    # Local chests
     "chestC": pg.image.load("src/assets/objects/chestClosed.png"),
-    "chestO": pg.image.load("src/assets/objects/chestOpen.png")
+    "chestO": pg.image.load("src/assets/objects/chestOpen.png"),
+    # Distant chests
+    "d_chestC": pg.image.load("src/assets/objects/d_chestClosed.png"),
+    "d_chestO": pg.image.load("src/assets/objects/d_chestOpen.png")
 }
 
 
@@ -93,6 +101,14 @@ class Map:
         ### Setting canvas ###
         self.init_views(self.minimap_size, minimap_reduction)
 
+        # An object list that contains chests
+        self.local_chests = [[None for tileX in range(len(self.map[tileY]))] for tileY in range(len(self.map))]
+        self.local_chests_pos = []
+        self.dist_chests_pos = []
+        self.dist_chests = [[None for tileX in range(len(self.map[tileY]))] for tileY in range(len(self.map))]
+        # Generating local chests
+        self.generate_local_chests()
+        
     def init_views(self, mini_size, mini_coeff):
         """Init array of every surface to blit on the screen (tiles & vision)"""
         lenX, lenY = len(self.map[0]), len(self.map)
@@ -121,6 +137,16 @@ class Map:
 
     def draw(self, display):
         "draw a part of map center in x,y (x and y being couted in tiles"
+        # Drawing the local chests
+        for sublist in self.local_chests:
+            for chest in sublist:
+                if chest:
+                    chest.draw_chest(self.map_canva)
+        # Drawing the distant chests 
+        for sublist in self.dist_chests:
+            for chest in sublist:
+                if chest:
+                    chest.draw_chest(self.map_canva)
         display.blit(
             self.map_canva,
             (-self.centered_in[0] * TILE_SIZE
@@ -209,6 +235,68 @@ class Map:
                 around.append((corner_list['DR'], 'DR'))
         return around
 
+    def generate_local_chests(self):
+        """Generates a list of chests on random tiles"""
+        for i in range(10):
+            coords = self.find_empty_tile()
+            self.local_chests[coords[1]][coords[0]] = Chest(coords)
+            self.local_chests_pos.append(coords)
+            # Chest hitbox
+            self.map[coords[1]][coords[0]].wall = True
+
+    def find_empty_tile(self):
+        "Return X,Y, tile coordonate without door, wall or objects in dungeon, floor"
+        # I have no fucking clue what this does
+        spawn_list = []
+        sX, sY = self.start_point
+        sX = int(sX//TILE_SIZE)
+        sY = int(sY//TILE_SIZE)
+        spawn_list.append([sX,sY])
+        # Searching for a walkable tile to place chest
+        mymap = self.map
+        randX, randY = randint(0, len(mymap)-1), randint(0, len(mymap[0])-1)
+        while mymap[randX][randY].wall or mymap[randY][randX].char =='P' or mymap[randY][randX].char =='G' \
+            or mymap[randY][randX].char == 'V' or mymap[randY][randX].char =="W" \
+            or self.local_chests[randX][randY] or self.dist_chests[randX][randY] \
+            or ([randX, randY] in spawn_list) \
+            or self.tile_blocking_way(mymap, randY, randX):
+            randX, randY = randint(0, len(mymap)-1), randint(0, len(mymap[0])-1)
+        return (randX, randY)
+    
+    def tile_blocking_way(self, my_map, X,Y):
+        "Return if the tile would be blocking something"
+        t = {'UL': my_map[X-1][Y-1].wall, 'UR':my_map[X+1][Y-1].wall, 'DL':my_map[X-1][Y+1].wall, 'DR':my_map[X+1][Y+1].wall,\
+            'U':my_map[X][Y-1].wall, 'D':my_map[X][Y+1].wall, 'L':my_map[X-1][Y].wall, 'R':my_map[X+1][Y].wall}
+        #Cas 1
+        return ((t['UL'] and t['UR'] and not t['U'] and not (t['L'] and t['R'] and t['D'])) or \
+        (t['UL'] and t['DL'] and not t['L'] and not (t['U'] and t['R'] and t['D'])) or \
+        (t['DR'] and t['UR'] and not t['R'] and not (t['L'] and t['U'] and t['D'])) or \
+        (t['DL'] and t['DR'] and not t['D'] and not (t['L'] and t['R'] and t['U'])) or \
+
+        (t['UL'] and t['DR'] and ((not t['U'] or not t['R']) or (not t['D'] or not t['L']))) or \
+        (t['DL'] and t['UR'] and ((not t['U'] or not t['L']) or (not t['D'] or not t['R']))) or \
+
+        (t['U'] and t['D'] and not t['L'] and not t['R']) or \
+        (t['R'] and t['L'] and not t['D'] and not t['U']) or \
+
+        (t['U'] and ((t['DL'] and not t['D'] and not(t['R'] and t['L']))or (t['DR'] and not t['D'] and not(t['R'] and t['L'])))) or \
+        (t['D'] and ((t['UL'] and not t['U'] and not(t['R'] and t['L']))or (t['UR'] and not t['U'] and not(t['R'] and t['L'])))) or \
+        (t['L'] and ((t['DR'] and not t['R'] and not(t['U'] and t['D']))or (t['UL'] and not t['R'] and not(t['U'] and t['D'])))) or \
+        (t['R'] and ((t['UL'] and not t['L'] and not(t['D'] and t['U']))or (t['DL'] and not t['L'] and not(t['D'] and t['U'])))))
+    
+    def generate_distant_chests(self, parsed_data):
+        """Creates the distant chests from a 
+        parsed data (which is something that lookes like : 
+        "positions_13/3/10_12/23/11_1/1/12...")
+        """
+        # Adding to the list of distant chest position every chest position
+        for string in parsed_data:
+            string = string.split("/")
+            owner_id = string[2]
+            position = tuple(map(int, (string[0], string[1])))
+            self.dist_chests_pos.append(position)
+            self.dist_chests[position[1]][position[0]] = DistantChest(position, owner_id)
+            self.map[position[1]][position[0]].wall = True
 
 class MapObject:
     """A class of object on map"""
@@ -234,17 +322,83 @@ class Firecamp(MapObject):
 
 
 class Chest(MapObject):
+    """The chests class that contain loots for the player"""
+
     def __init__(self, tile):
-        MapObject.__init__(tile)
-        self.image = dict_img_obj["chestC"].convert()
-        self.obj_list = []
-        # generate obj list
+        super().__init__(tile)
+        self.image = dict_img_obj["chestC"].convert_alpha()
+        self.image.set_colorkey((0,0,0))
+        # Items given to the player 
+        self.loots = []
+        self.generate_loots()
+        # If opened = true, the chest has been used
+        self.is_opened = False
+
+    def draw_chest(self, display):
+        """Draws the chest to the screen"""
+        display.blit(self.image, (self.tileX*TILE_SIZE, self.tileY*TILE_SIZE))
+    
+    def generate_loots(self):
+        """Generates chest loots"""
+        item_count = randint(1, 4)
+        for _ in range(item_count):
+            item_choice = choice(COMBAT_ITEM+ORES_ITEM+CONSUMABLE_ITEM)
+            if item_choice in COMBAT_ITEM:
+                new_item = CombatItem(item_choice)
+            elif item_choice in CONSUMABLE_ITEM:
+                new_item = ConsumableItem(item_choice)
+            elif item_choice in ORES_ITEM:
+                new_item = OresItem(item_choice)
+            self.loots.append(new_item)
+    
+    def use_chest(self, player):
+        """Uses the chest :
+            - Updates the sprite
+            - Updates the status of the chest
+            - Gives the items to the player"""
+        self.loot_items(player)
+        self.image = dict_img_obj["chestO"].convert_alpha()
+        self.image.set_colorkey((0, 0, 0))
+        if self.isEmpty():
+            self.is_opened = True 
+    
+    def loot_items(self, player):
+        """This functions gives the item in the chest to the 
+        player that asked for it"""
+        for _ in range(len(self.loots)):
+            if player.inventory.is_full():
+                print("[Inventory] : Impossible to add items to inventory, inventory is full")
+            item_to_add = self.loots.pop()
+            player.inventory.add_items([item_to_add])
 
     def isEmpty(self):
-        return (len(self.obj_list) == 0)
+        """Returns true if the chest is empty"""
+        return (len(self.loots) == 0)
 
-    def use(self, player):
-        if not self.isEmpty():
-            # give player obj here
-            self.image = dict_img_obj["chestO"].convert()
-            pass
+class DistantChest(MapObject):
+    """This class represents distant chest"""
+
+    def __init__(self, tile, owner_id):
+        super().__init__(tile)
+        self.owner_id = owner_id 
+        self.image = dict_img_obj["d_chestC"].convert_alpha()
+        self.image.set_colorkey((0,0,0))
+        # Items given to the player 
+        self.loots = []
+        self.generate_loots()
+        # If opened = true, the chest has been used 
+        self.is_opened = False 
+    
+    def draw_chest(self, display):
+        """Draws the chest to the screen"""
+        display.blit(self.image, (self.tileX*TILE_SIZE, self.tileY*TILE_SIZE))
+    
+    def generate_loots(self):
+        """Generates chest loots"""
+        item_count = randint(1, 4)
+        for _ in range(item_count):
+            self.loots.append(choice(COMBAT_ITEM+ORES_ITEM+CONSUMABLE_ITEM))
+
+    def isEmpty(self):
+        """Returns true if the chest is empty"""
+        return (len(self.loots) == 0)

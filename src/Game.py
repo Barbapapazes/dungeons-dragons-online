@@ -12,7 +12,7 @@ from src.Player import Player
 from src.Enemy import manage_enemy
 from src.utils.network import enqueue_output
 from .menu import MenuCharacter, MenuJoin, MenuMain
-from src.config.window import RESOLUTION
+from src.config.window import RESOLUTION, TILE_SIZE
 from src.config.colors import BLACK, WHITE
 from src.UI import CharacterStatus, Chat
 
@@ -46,8 +46,11 @@ class Game:
 
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
+        # Chest list 
+        self.chest_list = []
         # ------PLAYER----- #
         self.player = Player(self)
+        self.other_player = dict()  # key is the client id, value is a DistantPlayer instance
         # ------ENEMY------ #
         self.enemy_list = []
         # ------MENUS------ #
@@ -63,10 +66,11 @@ class Game:
         self.chat = Chat(400, 180, (15, 15), WHITE, 15, self)
 
         # ----NETWORK---- #
+        self.player_id = dict()
+        # Initialized when a party is created (10) or w<hen id is updated from other clients
+        self.own_id = -1
         self.network = Network(self)
         self.client = Client(self)
-        self.player_id = dict()
-        self.own_id = 10
 
     def check_events(self):
         "Checks for events in our game"
@@ -77,9 +81,22 @@ class Game:
                 self.current_menu.check_events(event)
             if self.playing:
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    dest = self.world_map.get_clicked_tile()
-                    if self.world_map.is_walkable_tile(*dest):
-                        self.player.update_path(dest)
+                    if event.button==3:
+                        # Moving the player
+                        dest = self.world_map.get_clicked_tile()
+                        if self.world_map.is_walkable_tile(*dest):
+                            self.player.update_path(dest)
+                    if event.button==1:
+                        # Using a chest
+                        pX, pY = self.player.tileX, self.player.tileY
+                        tileX, tileY = self.world_map.get_clicked_tile()
+                        if  self.is_chest_clickable("local", (pX, pY), (tileX, tileY)):
+                            # Here give the loots
+                            self.world_map.local_chests[tileY][tileX].use_chest(self.player)
+                            self.send_update_chests((tileX, tileY))
+                        if  self.is_chest_clickable("dist", (pX, pY), (tileX, tileY)):
+                            # Here give the loots
+                            self.request_chest((tileX, tileY))
                 if event.type == pg.KEYDOWN:
                     # If we press tab, display the character status menu
                     if event.key == pg.K_TAB:
@@ -92,6 +109,7 @@ class Game:
 
     def quit(self):
         """A function to properly quit the game"""
+        print("[Game] Quiting game ...")
         self.running, self.playing = False, False
         self.current_menu.displaying = False
         self.client.disconnect()
@@ -113,6 +131,8 @@ class Game:
             self.player.move()
             manage_enemy(self)
             self.player.draw(self.display)
+            for o_player in self.other_player.values():
+                o_player.draw(self.world_map, self.display)
             self.chat.draw(self.display)
             self.character_status.draw()
             self.player.inventory.draw()
@@ -120,3 +140,87 @@ class Game:
             self.update_screen()
             self.clock.tick(30)
             self.network.server()
+
+    def distant_player_move(self, p_id, target):
+        """Moves a distant player on the map
+
+        Args:
+            p_id (str/int): the player ID
+            target (tuple(int)): the position where he needs to move
+        """
+        try:
+            exX, exY = self.other_player[int(p_id)].get_current_pos()
+            self.world_map.map[exY][exX].wall = False
+            self.other_player[int(p_id)].move(*target)
+            newX, newY = target
+            self.world_map.map[newY][newX].wall = True
+        # This exception will be triggered when the player receives
+        # his own movement, because when someone connects we send him
+        # every other movement of other players which he is in
+        # I didn't find a way to make it easier and I think just ignoring
+        # when you get your own movement is a good way to proceed
+        except KeyError: 
+            pass 
+
+    ### -- CHEST RELATED -- ###
+    
+    def request_chest(self, pos):
+        """Sends a request to the player which owns
+        the chest to get what's inside of it 
+
+        Args:
+            pos (tuple(int)): the position of the chest
+        """
+        owner_id = self.world_map.dist_chests[pos[1]][pos[0]].owner_id
+        owner_ip = ""
+        try:
+            for ip, id in self.player_id.items():
+                if id==owner_id:
+                    owner_ip = ip
+        except:
+            print("[Chests] Player not found in id list")
+        else:
+            # Building the packet 
+            msg = str(self.own_id) + " 6 " + "request_" + str(pos[0]) + "/" + str(pos[1])
+            msg += "_" + str(self.player.inventory.free_slots_number())
+            self.network.send_message(msg, owner_ip)
+            print("[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))
+    
+    def send_update_chests(self, pos):
+        """Sends an update to other players when you
+        open your own local chest
+
+        Args:
+            pos (tuple(int)): position of the chest
+        """
+        udpate_msg = str(self.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
+        self.network.send_global_message(udpate_msg)
+
+    def is_chest_clickable(self, type, pos, tiles):
+        """Verifies if a chest is clickable by testing 
+        if it exists/is in range/is empty...
+
+        Args:
+            type (str): either "local" or "dist" for the type of chest
+            pos (tuple(int)): the position of the player
+            tiles (tuple(int)): the tile on which the chest is 
+
+        Returns:
+            [type]: [description]
+        """
+        
+        tileX, tileY = tiles 
+        pX, pY = pos 
+
+        # Local chests
+        if type=="local":   
+            return self.world_map.is_visible_tile(tileX, tileY) and \
+                    self.world_map.local_chests[tileY][tileX] and \
+                    self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
+                    self.world_map.local_chests[tileY][tileX].is_opened
+        # Distant chests
+        elif type=="dist":
+            return self.world_map.is_visible_tile(tileX, tileY) and \
+                    self.world_map.dist_chests[tileY][tileX] and \
+                    self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
+                    self.world_map.dist_chests[tileY][tileX].is_opened
