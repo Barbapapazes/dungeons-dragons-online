@@ -1,4 +1,3 @@
-
 import subprocess
 import os
 import queue
@@ -7,9 +6,33 @@ import time
 import threading
 from src.Player import DistantPlayer
 from src.Map import dict_img_obj
-from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE, CHAT, CHEST
-from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet, get_id_from_all_packet
-from src.Item import CONSUMABLE_ITEM, COMBAT_ITEM, ORES_ITEM, CombatItem, ConsumableItem, OresItem
+from src.config.network import (
+    CLIENT_PATH,
+    SERVER_PATH,
+    FIRST_CONNECTION,
+    NEW_IP,
+    DISCONNECT,
+    CHANGE_ID,
+    MOVE,
+    CHAT,
+    CHEST,
+)
+from src.utils.network import (
+    enqueue_output,
+    get_ip,
+    check_message,
+    get_id_from_packet,
+    get_ip_from_packet,
+    get_id_from_all_packet,
+)
+from src.Item import (
+    CONSUMABLE_ITEM,
+    COMBAT_ITEM,
+    ORES_ITEM,
+    CombatItem,
+    ConsumableItem,
+    OresItem,
+)
 from os import path
 import traceback
 
@@ -21,11 +44,22 @@ class Network:
         self.ip = get_ip()
         self.port = 8000
         self._server = self.create_serveur()
-        print("[Server] Socket :", self.get_socket())
+        self._client = self.create_client()
+        # queue.Queue() is a queue FIFO (First In First Out) with an unlimited size
+        tmp_queue = queue.Queue()
+        tmp_thread = threading.Thread(
+            target=enqueue_output,
+            args=(self._client.stdout, tmp_queue),
+        )
+
+        # the thread will die with the end of the main procuss
+        tmp_thread.daemon = True
+        # thread is launched
+        tmp_thread.start()
+        self.ping = (tmp_thread, tmp_queue)
+        print(self.get_socket())
 
         self.client_ip_port = set()  # is a set to avoid duplicate
-        self.connections = dict()  # contains subprocess with ip:port as a key
-        self.ping = dict()  # contains multiple thread to read tcpclient
         # contains all player_id associated to their ip
 
         self.q = queue.Queue()
@@ -69,6 +103,15 @@ class Network:
         # poll check if the process has ended or not. If the process is running the None is returned
         return self.check_server(server)
 
+    def create_client(self):
+        client = subprocess.Popen(
+            [CLIENT_PATH],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return client
+
     def check_server(self, server):
         """Check is the server is created
 
@@ -97,15 +140,16 @@ class Network:
     def server(self):
         """interprets the server's output"""
         # try to get something from each tcpclient process
-        for key in self.ping:
-            try:
-                line = self.ping[key][1].get(timeout=0.001)
-            except queue.Empty:
-                pass
-            else:
-                # binary flux that we need to decode before manipulate it
-                line = line.decode("ascii")
-                line = line[:-1]  # delete the final `\n`
+
+        try:
+            line = self.ping[1].get(timeout=0.001)
+        except queue.Empty:
+            pass
+        else:
+            # binary flux that we need to decode before manipulate it
+            line = line.decode("ascii")
+            line = line[:-1]  # delete the final `\n`
+            print(line)
 
         try:
             # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
@@ -119,7 +163,7 @@ class Network:
             line = line.decode("utf8")
             line = line[:-1]  # delete the final `\n`
             action = self.get_action_from(line)  # get action from packet
-        
+
             # first connection of a client
             if action == FIRST_CONNECTION:
                 self.new_connexion(line)
@@ -135,7 +179,7 @@ class Network:
             # change the id of the current user (used at the first connexion)
             elif action == CHANGE_ID:
                 self.change_id(line)
-                # We send chests after the ID has been changed 
+                # We send chests after the ID has been changed
                 # otherwise, the chests IDs are -1 !
                 self.send_own_chests()
 
@@ -145,10 +189,9 @@ class Network:
                 unparsed_target = self.get_data_from(line)
                 target = unparsed_target.split("/")
                 target = list(map(int, target))
-                self.game.distant_player_move(
-                    mover_id, target)
+                self.game.distant_player_move(mover_id, target)
                 # ID + Action + str
-            
+
             # if the action is on chests
             elif action == CHEST:
                 player_id = get_id_from_all_packet(line)
@@ -156,25 +199,34 @@ class Network:
                 parsed_data = data.split("_")
                 # If we receive a packet composed of all chests positions ("positions_13/2/10_12/1/11...")
                 if parsed_data[0] == "positions":
-                    self.game.world_map.generate_distant_chests(parsed_data[1:])
-                # If we receivee a packet that requests one of our chests ("request_13/13_10...")
-                if parsed_data[0] == "request": 
-                    print("[Chests] Player [{}] requested the chest at position ".format(player_id), parsed_data[1:])
+                    self.game.world_map.generate_distant_chests(
+                        parsed_data[1:]
+                    )
+                #  If we receivee a packet that requests one of our chests ("request_13/13_10...")
+                if parsed_data[0] == "request":
+                    print(
+                        "[Chests] Player [{}] requested the chest at position ".format(
+                            player_id
+                        ),
+                        parsed_data[1:],
+                    )
                     self.handle_requested_chest(parsed_data[1:], player_id)
                 # If we receive a packet containing the items ("items_Plate/Armor_Axe_Sword...")
                 if parsed_data[0] == "items":
                     print("[Chests] Your chest request has been accepted")
                     self.get_chests_items(parsed_data[1:])
-                # If we receive a refuse packet ("refuse")
+                #  If we receive a refuse packet ("refuse")
                 if parsed_data[0] == "refuse":
-                    print("[Chests] Your chest request has been refused, your inventory might be full")
+                    print(
+                        "[Chests] Your chest request has been refused, your inventory might be full"
+                    )
                 # If we receive an update packet ("update_13/20"")
                 if parsed_data[0] == "update":
                     self.update_chests(parsed_data[1:])
-                    
+
             elif action == CHAT:
                 self.chat_message(line)
-            
+
             else:
                 print("[Unknown Action :", action, "]")
 
@@ -182,28 +234,8 @@ class Network:
         # if line[1] not in self.players:
         #     self.players[line[1]] = Player()
         ip = get_ip_from_packet(line)
-        # data is of the form "ip:port:id"
-        ip_array = ip.split(":")
-        if len(ip_array) not in [2, 3]:
-            return
-        self.connections[ip] = subprocess.Popen(
-            [CLIENT_PATH, ip_array[0], ip_array[1]],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        # queue.Queue() is a queue FIFO (First In First Out) with an unlimited size
-        tmp_queue = queue.Queue()
-        tmp_thread = threading.Thread(
-            target=enqueue_output,
-            args=(self.connections[ip].stdout, tmp_queue),
-        )
-
-        # the thread will die with the end of the main procuss
-        tmp_thread.daemon = True
-        # thread is launched
-        tmp_thread.start()
-        self.ping[ip] = (tmp_thread, tmp_queue)
+        self._client.stdin.write(str.encode("!" + ip + "\n"))
+        self._client.stdin.flush()
 
     def first_connection(self, line):
         """Manage the first connection with a client and send the info to other clients
@@ -217,39 +249,53 @@ class Network:
         self.game.other_player[int(new_id)] = DistantPlayer()
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
-            msg = str(str(self.game.own_id) + " 2 "
-                      + target_ip + ":" + new_id)
+            msg = str(str(self.game.own_id) + " 2 " + target_ip + ":" + new_id)
             self.send_message(msg, ip)
 
         for ip in self.client_ip_port:
             # this loop sends to the new user all the ip contained in self.client_ip_port and all the relative position of the players
             # block that sends the ip
-            msg = str(str(self.game.own_id) + " 2 "
-                      + ip + ":" + self.game.player_id[ip])
+            msg = str(
+                str(self.game.own_id)
+                + " 2 "
+                + ip
+                + ":"
+                + self.game.player_id[ip]
+            )
             self.send_message(msg, target_ip)
         # Send to the client his id and our ip:port (he will add it to his player_id dictionnary)
-        msg = str(str(self.game.own_id) + " 10 "
-                  + self.ip + ":" + str(self.port) + ":" + new_id)
+        msg = str(
+            str(self.game.own_id)
+            + " 10 "
+            + self.ip
+            + ":"
+            + str(self.port)
+            + ":"
+            + new_id
+        )
         self.send_message(msg, target_ip)
         # add to our player_id dictionnary his id
         self.game.player_id[target_ip] = new_id
         # Sending position of chests and players to the new ip
         self.init_player_pos(target_ip)
         self.init_chests_pos(target_ip)
-        
+
     def generate_new_id(self):
         if len(self.game.player_id) > 0:
             # get last id and add 1 to it
             new_id = str(
-                max(int(max(list(self.game.player_id.values()))) + 1, self.game.own_id + 1))
+                max(
+                    int(max(list(self.game.player_id.values()))) + 1,
+                    self.game.own_id + 1,
+                )
+            )
         else:
             new_id = str(self.game.own_id + 1)
         return new_id
 
     def init_player_pos(self, target_ip):
-        """Sends our position to the new player
-        """
-        # Send the position of other players 
+        """Sends our position to the new player"""
+        # Send the position of other players
         for id, player in self.game.other_player.items():
             pX, pY = player.get_current_pos()
             pos_msg = str(id) + " 4 " + str(pX) + "/" + str(pY)
@@ -260,7 +306,7 @@ class Network:
         pX, pY = self.game.player.get_current_pos()
         pos_msg = str(self.game.own_id) + " 4 " + str(pX) + "/" + str(pY)
         self.send_message(pos_msg, target_ip)
-        
+
     def init_chests_pos(self, target_ip):
         """First sends the position of local chests
         and then the position of distant chests to the connecting
@@ -274,7 +320,14 @@ class Network:
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
         # Formatting and adding the message every local chest pos (i know the game id is already in the first field but it's easier for me like this first)
         for chest_pos in local_chests_pos:
-            pos_msg += "_" + str(chest_pos[0]) + "/" + str(chest_pos[1]) + "/" + str(self.game.own_id)
+            pos_msg += (
+                "_"
+                + str(chest_pos[0])
+                + "/"
+                + str(chest_pos[1])
+                + "/"
+                + str(self.game.own_id)
+            )
         # Sending packet
         self.send_message(pos_msg, target_ip)
 
@@ -284,7 +337,14 @@ class Network:
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
         # Formatting and adding the message every local chest pos
         for chest_pos in dist_chests_pos:
-            pos_msg += "_" + str(chest_pos[0]) + "/" + str(chest_pos[1]) + "/" + str(dist_chests[chest_pos[1]][chest_pos[0]].owner_id)
+            pos_msg += (
+                "_"
+                + str(chest_pos[0])
+                + "/"
+                + str(chest_pos[1])
+                + "/"
+                + str(dist_chests[chest_pos[1]][chest_pos[0]].owner_id)
+            )
         # Sending packet
         self.send_message(pos_msg, target_ip)
 
@@ -337,10 +397,8 @@ class Network:
         try:
             client = self.get_data_from(line)
             self.remove_from_client(client)
-            self.remove_from_other_player(int(self.player_id[client]))
-            self.remove_from_player_id(client)
-            self.kill(client)
-            self.remove_connexion(client)
+            # self.kill(client)
+            # self.remove_connexion(client)
         except Exception as e:
             print("Error disconnect", e)
         # delete the player so it is not blit anymore
@@ -395,7 +453,7 @@ class Network:
         pid = self.connections[client].pid
         os.kill(pid, signal.SIGINT)
 
-    @ staticmethod
+    @staticmethod
     def get_data_from(line):
         """get data part of the packet
 
@@ -413,7 +471,7 @@ class Network:
             raise Exception("Can't split the line")
         return line[2]
 
-    @ staticmethod
+    @staticmethod
     def get_action_from(line):
         """get action part of the packet
 
@@ -441,7 +499,7 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
-        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()       
+        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
 
     def chat_message(self, line):
         my_message = self.get_data_from(line)
@@ -464,13 +522,14 @@ class Network:
                 return
 
             msg = msg.split(" ")
-
+            self._client.stdin.write(str.encode(ip + "\n"))
+            self._client.stdin.flush()
             for word in msg:
-                word += '\n'
+                word += "\n"
                 word = str.encode(word)
-                self.connections[ip].stdin.write(word)
-                self.connections[ip].stdin.flush()
-        if(chat):
+                self._client.stdin.write(word)
+                self._client.stdin.flush()
+        if chat:
 
             msg = msg.split(" ")
             # Creation of a list with the data we want to send
@@ -484,11 +543,14 @@ class Network:
             for i in range(2, len(msg)):
                 my_str += msg[i] + "_"
             mylist.append(my_str)
+            print("mylist : ", mylist)
+            self._client.stdin.write(str.encode(ip + "\n"))
+            self._client.stdin.flush()
             for word in mylist:
-                word += '\n'
+                word += "\n"
                 word = str.encode(word)
-                self.connections[ip].stdin.write(word)
-                self.connections[ip].stdin.flush()
+                self._client.stdin.write(word)
+                self._client.stdin.flush()
 
     def send_global_message(self, msg):
         """SOON DEPRECATED
@@ -502,9 +564,9 @@ class Network:
             self.send_message(msg, player_ip)
 
     ### -- CHESTS RELATED -- ###
-    
+
     def send_own_chests(self):
-        """This function is called when a client connects to 
+        """This function is called when a client connects to
         the host of the game, after the ID change (to get the right owner ID for
         chests). It sends to every other players the position of the new client local chests"""
 
@@ -518,9 +580,16 @@ class Network:
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
         # Formatting and adding the message every local chest pos
         for chest_pos in local_chests_pos:
-            pos_msg += "_" + str(chest_pos[0]) + "/" + str(chest_pos[1]) + "/" + str(self.game.own_id)
+            pos_msg += (
+                "_"
+                + str(chest_pos[0])
+                + "/"
+                + str(chest_pos[1])
+                + "/"
+                + str(self.game.own_id)
+            )
         # Sending packet
-        self.game.network.send_global_message(pos_msg) 
+        self.game.network.send_global_message(pos_msg)
 
     def handle_requested_chest(self, parsed_data, player_id):
         """Handles what to do when receiving a chest request
@@ -531,35 +600,55 @@ class Network:
         """
         pos = tuple(map(int, parsed_data[0].split("/")))
         inv_slots = parsed_data[1]
-        
-        try: 
+
+        try:
             for ip, id in self.game.player_id.items():
-                if str(id)==str(player_id):
+                if str(id) == str(player_id):
                     player_ip = ip
         except:
             print("[Chests] : Can't find player in id list")
         else:
             # Checking if player has enough slots in inventory to get the full chest
-            if int(inv_slots) >= len(self.game.world_map.local_chests[pos[1]][pos[0]].loots):
+            if int(inv_slots) >= len(
+                self.game.world_map.local_chests[pos[1]][pos[0]].loots
+            ):
 
                 # Building the packet
                 msg = str(self.game.own_id) + " 6 " + "items"
-                for _ in range(len(self.game.world_map.local_chests[pos[1]][pos[0]].loots)):
-                    item = self.game.world_map.local_chests[pos[1]][pos[0]].loots.pop()
-                    item_name = item.name 
+                for _ in range(
+                    len(self.game.world_map.local_chests[pos[1]][pos[0]].loots)
+                ):
+                    item = self.game.world_map.local_chests[pos[1]][
+                        pos[0]
+                    ].loots.pop()
+                    item_name = item.name
                     item_name = item_name.replace(" ", "/")
-                    msg += "_" + item_name 
-                
+                    msg += "_" + item_name
+
                 # Sending approval packet
                 self.send_message(msg, player_ip)
                 # Updating own world to make the chest opened
-                self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
-                self.game.world_map.local_chests[pos[1]][pos[0]].image = dict_img_obj["chestO"].convert_alpha()
-                self.game.world_map.local_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
+                self.game.world_map.local_chests[pos[1]][
+                    pos[0]
+                ].is_opened = True
+                self.game.world_map.local_chests[pos[1]][
+                    pos[0]
+                ].image = dict_img_obj["chestO"].convert_alpha()
+                self.game.world_map.local_chests[pos[1]][
+                    pos[0]
+                ].image.set_colorkey((0, 0, 0))
                 print("[Chests] Accepted request from [{}]".format(player_id))
 
                 # Sending packet to update chest for everyone (actually update = inform that a chest is opened)
-                udpate_msg = str(self.game.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
+                udpate_msg = (
+                    str(self.game.own_id)
+                    + " 6 "
+                    + "update"
+                    + "_"
+                    + str(pos[0])
+                    + "/"
+                    + str(pos[1])
+                )
                 self.send_global_message(udpate_msg)
             else:
                 # Sending a refuse message
@@ -585,7 +674,7 @@ class Network:
 
     def update_chests(self, parsed_data):
         """Updates a chest when an update packet is received
-        Checks if the chest is local or distant to update it 
+        Checks if the chest is local or distant to update it
 
         Args:
             parsed_data (str): the parsed packet data
@@ -593,11 +682,17 @@ class Network:
         pos = tuple(map(int, parsed_data[0].split("/")))
         if self.game.world_map.local_chests[pos[1]][pos[0]]:
             self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
-            self.game.world_map.local_chests[pos[1]][pos[0]].image = dict_img_obj["chestO"].convert_alpha()
-            self.game.world_map.local_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
+            self.game.world_map.local_chests[pos[1]][
+                pos[0]
+            ].image = dict_img_obj["chestO"].convert_alpha()
+            self.game.world_map.local_chests[pos[1]][
+                pos[0]
+            ].image.set_colorkey((0, 0, 0))
         else:
             self.game.world_map.dist_chests[pos[1]][pos[0]].is_opened = True
-            self.game.world_map.dist_chests[pos[1]][pos[0]].image = dict_img_obj["d_chestO"].convert_alpha()
-            self.game.world_map.dist_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
-        
-
+            self.game.world_map.dist_chests[pos[1]][
+                pos[0]
+            ].image = dict_img_obj["d_chestO"].convert_alpha()
+            self.game.world_map.dist_chests[pos[1]][pos[0]].image.set_colorkey(
+                (0, 0, 0)
+            )
