@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
         stop("socket");
     }
 
-        serv_addr.sin_family = AF_INET;
+    serv_addr.sin_family = AF_INET;
     if (inet_aton(argv[2], &serv_addr.sin_addr) == 0)
         stop("inet_aton()");
     serv_addr.sin_port = htons(atoi(argv[1]));
@@ -116,10 +116,10 @@ int main(int argc, char *argv[])
         {
             stop("select");
         }
-
+        // activity on the master_socket -> new connection
         if (FD_ISSET(master_socket, &readfds))
         {
-            if ((new_socket = accept(master_socket, (struct sockaddr *)&serv_addr, (socklen_t *)&addrlen)) < 0) // FIX lorsque il y a 3 connexions (dont une qui s'est remove)
+            if ((new_socket = accept(master_socket, (struct sockaddr *)&serv_addr, (socklen_t *)&addrlen)) < 0)
             {
                 stop("accept");
             }
@@ -127,13 +127,14 @@ int main(int argc, char *argv[])
             if (new_socket != 0)
                 client_socket[first_available_socket(client_socket, max_clients)] = new_socket;
         }
+        // check for an activity on other sockets
         for (i = 0; i < max_clients; i++)
         {
             sd = client_socket[i];
-
+            // if there is an activity on sd
             if (FD_ISSET(sd, &readfds))
             {
-                if ((valread = recv(sd, buffer, 1024, 0)) == 0)
+                if ((valread = recv(sd, buffer, 2048, 0)) == 0)
                 {
                     close(sd);
                     client_socket[i] = 0;
