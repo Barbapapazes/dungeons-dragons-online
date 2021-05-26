@@ -149,7 +149,6 @@ class Network:
             # binary flux that we need to decode before manipulate it
             line = line.decode("ascii")
             line = line[:-1]  # delete the final `\n`
-            print(line)
 
         try:
             # try to pop something from the queue if there is nothing at the end of the timeout raise queue.Empty
@@ -162,6 +161,7 @@ class Network:
             # binary flux that we need to decode before manipulate it
             line = line.decode("utf8")
             line = line[:-1]  # delete the final `\n`
+            print(line)
             action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
@@ -417,7 +417,7 @@ class Network:
         Args:
             client (string): ip:port
         """
-        self.client_ip_port.remove(client)
+        self._client.stdin.write(str.encode(str("-" + client + "\n")))
 
     def remove_from_player_id(self, client):
         """remove the client from the dict player_id
@@ -560,8 +560,7 @@ class Network:
         Args:
             msg (str): the message/packet to send
         """
-        for player_ip in self.game.network.connections.keys():
-            self.send_message(msg, player_ip)
+        self.send_message(msg, "all")
 
     ### -- CHESTS RELATED -- ###
 
@@ -569,7 +568,7 @@ class Network:
         """This function is called when a client connects to
         the host of the game, after the ID change (to get the right owner ID for
         chests). It sends to every other players the position of the new client local chests"""
-
+        print("send own chests")
         local_chests_pos = self.game.world_map.local_chests_pos
         local_chests = self.game.world_map.local_chests
 

@@ -112,8 +112,6 @@ class MenuJoin(Menu):
                 str.encode("!" + client_ip + "\n")
             )
 
-            if not self.isOpen(tmp[0], tmp[1]):
-                return
             self.game.network._client.stdin.flush()
             self.displaying = False
             self.game.menu_running = False
@@ -132,6 +130,7 @@ class MenuJoin(Menu):
                 + str(self.game.network.port)
             )
             self.game.network.send_message(msg, client_ip)
+            self.game.playing = True
 
     def display_menu(self):
         """Displays the menu on our screen"""
@@ -154,9 +153,9 @@ class MenuJoin(Menu):
 
     def isOpen(self, ip, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        t = s.connect_ex((ip, int(port)))
-        s.close()
-        if t == 0:
+        try:
+            t = s.connect((ip, int(port)))
+            s.shutdown(2)
             return True
-        return False
+        except:
+            return False
