@@ -13,11 +13,13 @@
 #include <sys/sendfile.h>
 #include <strings.h>
 #include <signal.h>
+#include <sys/epoll.h>
 #include "serialization.h"
 
 #define TRUE 1
 #define FALSE 0
 #define BUFSIZE 1025
+#define MAXCLIENT 2000
 
 void stop(char *msg)
 {
@@ -46,13 +48,15 @@ int main(int argc, char *argv[])
 {
     signal(SIGUSR2, &activation);
     int opt = TRUE;
-    int master_socket, addrlen, new_socket, client_socket[2000], max_clients = 2000, activity, i, valread, sd;
-    int max_sd;
-    bzero(client_socket, max_clients * sizeof(int)); // initialize socket array to 0
+    //master socket is the server socket that will receive new connection curfds is current file descriptors (number of connection)
+    //epollfd is the file descriptor that will be used to controll the epoll
+    int master_socket, addrlen, new_socket, activity, client_socket[MAXCLIENT], valread, curfds, epollfd;
+    bzero(client_socket, MAXCLIENT);
+    struct epoll_event ev;      // struct used to initialize the epoll
+    struct epoll_event *events; // array that will contains fd with an activity
 
     struct sockaddr_in serv_addr;
-    char buffer[BUFSIZE]; //data buffer of 1K
-    fd_set readfds;
+    char buffer[BUFSIZE];                                     //data buffer of 1K
     game_packet game_data = {0, -1, ""};                      // initialize a game_packet structure that will contain all the needed information
     static const game_packet empty_game_packet = {0, -1, ""}; // initialize a game_packet structure that will be used to reset the first one
 
@@ -85,59 +89,58 @@ int main(int argc, char *argv[])
     //accept the incoming connection
     addrlen = sizeof(serv_addr);
 
+    // setup epoll add the master socket to the wait list
+    epollfd = epoll_create(MAXCLIENT);
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.fd = master_socket;
+
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, master_socket, &ev) < 0)
+    {
+        stop("epoll_ctl_add_master");
+    }
+    events = calloc(MAXCLIENT, sizeof ev);
+    curfds = 1;
+
     while (TRUE)
     {
-        //clear the socket set
-        FD_ZERO(&readfds);
-
-        //add master socket to set
-        FD_SET(master_socket, &readfds);
-        max_sd = master_socket;
-
-        //add child sockets to set
-        for (i = 0; i < max_clients; i++)
+        // wait for an activity
+        activity = epoll_wait(epollfd, events, curfds, -1);
+        if (activity == -1)
         {
-            //socket descriptor
-            sd = client_socket[i];
-
-            //if valid socket descriptor then add to read list
-            if (sd > 0)
-                FD_SET(sd, &readfds);
-
-            //highest file descriptor number, need it for the select function
-            if (sd > max_sd)
-                max_sd = sd;
+            stop("epoll_wait");
         }
 
-        //wait for an activity on one of the sockets , timeout is NULL , so wait indefinitely
-        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-
-        if ((activity < 0) && (errno != EINTR))
+        for (int n = 0; n < activity; ++n)
         {
-            stop("select");
-        }
-        // activity on the master_socket -> new connection
-        if (FD_ISSET(master_socket, &readfds))
-        {
-            if ((new_socket = accept(master_socket, (struct sockaddr *)&serv_addr, (socklen_t *)&addrlen)) < 0)
+            if (events[n].data.fd == master_socket)
             {
-                stop("accept");
-            }
 
-            if (new_socket != 0)
-                client_socket[first_available_socket(client_socket, max_clients)] = new_socket;
-        }
-        // check for an activity on other sockets
-        for (i = 0; i < max_clients; i++)
-        {
-            sd = client_socket[i];
-            // if there is an activity on sd
-            if (FD_ISSET(sd, &readfds))
-            {
-                if ((valread = recv(sd, buffer, 2048, 0)) == 0)
+                if ((new_socket = accept(master_socket, (struct sockaddr *)&serv_addr, (socklen_t *)&addrlen)) < 0)
                 {
-                    close(sd);
-                    client_socket[i] = 0;
+                    stop("accept");
+                }
+
+                if (new_socket != 0)
+                {
+                    client_socket[first_available_socket(client_socket, MAXCLIENT)] = new_socket;
+                    ev.events = EPOLLIN | EPOLLET;
+                    ev.data.fd = new_socket;
+                    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, new_socket, &ev) < 0)
+                    {
+                        stop("epoll_ctl_add");
+                    }
+                    curfds++;
+                }
+            }
+            else
+            {
+                if ((valread = recv(events[n].data.fd, buffer, 2048, 0)) == 0)
+                {
+                    // disconnection
+                    epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, &ev);
+                    curfds--;
+                    close(events[n].data.fd);
+                    client_socket[n] = 0;
                 }
                 else
                 {
