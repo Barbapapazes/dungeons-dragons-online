@@ -54,7 +54,7 @@ class local_Enemy(Enemy):
         if len(self.futur_steps) != 0:
             # If we have a path; we continue to go through
             self.walk(self.futur_steps.pop(0))
-            #network.send_enemy_update(self.id, self.get_pos())
+            network.send_enemy_update(self.id, self.get_pos())
         else:
             # The path is empty
             if self.pause_turn == 0:
@@ -120,7 +120,7 @@ def manage_enemy(game):
         while (any(e.id == e_id for e in game.local_enemy_list)):
             e_id += 1
         new_e = local_Enemy(game.world_map, e_id)
-        #game.network.send_enemy_update(new_e.id, new_e.get_pos(), isNewEnemy=True)
+        game.network.send_enemy_update(new_e.id, new_e.get_pos(), isNewEnemy=True)
         game.local_enemy_list.append(new_e)
 
         
