@@ -51,8 +51,10 @@ class Game:
         # ------PLAYER----- #
         self.player = Player(self)
         self.other_player = dict()  # key is the client id, value is a DistantPlayer instance
-        # ------ENEMY------ #
-        self.enemy_list = []
+	    # ------ENEMY------ #
+        self.local_enemy_list = [] #Enemies managed by the local player
+        self.distant_enemy_list = dict() #Enemies managed by other players player_id:distant_enemy
+        
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)
@@ -194,7 +196,7 @@ class Game:
             pos (tuple(int)): position of the chest
         """
         udpate_msg = str(self.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
-        self.network.send_global_message(udpate_msg)
+        self.network.broadcast_message(udpate_msg)
 
     def is_chest_clickable(self, type, pos, tiles):
         """Verifies if a chest is clickable by testing 

@@ -8,6 +8,7 @@ from src.Player import DistantPlayer
 from src.Map import dict_img_obj
 from src.config.network import (
     CLIENT_PATH,
+    ENEMY,
     SERVER_PATH,
     FIRST_CONNECTION,
     NEW_IP,
@@ -34,6 +35,7 @@ from src.Item import (
     OresItem,
 )
 from os import path
+from src.Enemy import distant_Enemy, find_enemy_by_id
 import traceback
 
 
@@ -226,6 +228,9 @@ class Network:
 
             elif action == CHAT:
                 self.chat_message(line)
+            
+            elif action == ENEMY:
+                self.receive_enemy_update(line)
 
             else:
                 print("[Unknown Action :", action, "]")
@@ -247,6 +252,7 @@ class Network:
         target_ip = self.get_data_from(line)
         new_id = self.generate_new_id()
         self.game.other_player[int(new_id)] = DistantPlayer()
+        self.game.distant_enemy_list[int(new_id)] = []
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
             msg = str(str(self.game.own_id) + " 2 " + target_ip + ":" + new_id)
@@ -379,6 +385,7 @@ class Network:
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
         self.game.other_player[int(id)] = DistantPlayer()
+        self.game.distant_enemy_list[int(id)] = []
         print("[Server] New connection [" + id + "] ", "with ip :", ip)
         try:
             self.add_to_clients(ip)
@@ -434,6 +441,7 @@ class Network:
             p_id (int): id of the player to remove
         """
         del self.game.other_player[p_id]
+        del self.game.distant_enemy_list[p_id]
 
     def remove_connexion(self, client):
         """Delete the two threads associated to the client from the connections and ping dictionnary
@@ -500,6 +508,7 @@ class Network:
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
         self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
+        self.game.distant_enemy_list[int(line.split(" ")[0])] = []
 
     def chat_message(self, line):
         my_message = self.get_data_from(line)
@@ -552,8 +561,8 @@ class Network:
                 self._client.stdin.write(word)
                 self._client.stdin.flush()
 
-    def send_global_message(self, msg):
-        """SOON DEPRECATED
+    def broadcast_message(self, msg):
+        """
         A function that sends to every other player in the game
         instead of juste one
 
@@ -588,7 +597,7 @@ class Network:
                 + str(self.game.own_id)
             )
         # Sending packet
-        self.game.network.send_global_message(pos_msg)
+        self.game.network.broadcast_message(pos_msg)
 
     def handle_requested_chest(self, parsed_data, player_id):
         """Handles what to do when receiving a chest request
@@ -648,7 +657,7 @@ class Network:
                     + "/"
                     + str(pos[1])
                 )
-                self.send_global_message(udpate_msg)
+                self.broadcast_message(udpate_msg)
             else:
                 # Sending a refuse message
                 msg = str(self.game.own_id) + " 6 " + "refuse"
@@ -695,3 +704,36 @@ class Network:
             self.game.world_map.dist_chests[pos[1]][pos[0]].image.set_colorkey(
                 (0, 0, 0)
             )
+
+    ### --- Enemy related --- ###
+    def send_enemy_update(self, e_id, pos, isNewEnemy=False):
+        """Send a message when a enemy is created or moving
+
+        Args:
+            e_id (int): local enemy id (each enemy is identified by owner_id + local_id)
+            pos (tuple(int,int)): the position of the enemy we are updating
+            isNewEnemy (bool): is True when it's the first time we are sending a packet about this enemy
+        """
+        #isNew value is 1 when it's a new enemy
+        line = str(self.game.own_id) + " 8 "
+        line= line + "{isNew}/".format(isNew=1 if isNewEnemy else 0) 
+        line= line + str(e_id) + "/" + str(pos[0]) + "/" + str(pos[1]) 
+        print("[E UPDATE]", line)
+        self.broadcast_message(line)
+
+    def receive_enemy_update(self, line):
+        """Manage the reception of enemy update
+
+        Args :
+            line : the content of the packet received
+        """
+        owner_id = get_id_from_all_packet(line)
+        data = self.get_data_from(line)
+        data.split("/")
+        enemy_id = str(data[1])
+        pos= (str(data[2]), str(data[3]))
+        if int(data[0]) :
+            self.game.distant_enemy_list[owner_id] = distant_Enemy(self.game.map, enemy_id, pos)
+        else :
+            enemy = find_enemy_by_id(self.game.distant_enemy_list[owner_id], enemy_id)
+            enemy.walk(pos)

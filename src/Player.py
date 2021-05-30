@@ -87,7 +87,7 @@ class Player:
             line = str(self.game.own_id) + " 4 " + \
                 str(self.tileX) + "/" + str(self.tileY)
             if is_initialized_id(self.game.own_id):
-                self.game.network.send_global_message(line)
+                self.game.network.broadcast_message(line)
 
     def get_current_pos(self):
         "Return X, Y the current position"
