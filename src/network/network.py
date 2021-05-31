@@ -285,6 +285,7 @@ class Network:
         # Sending position of chests and players to the new ip
         self.init_player_pos(target_ip)
         self.init_chests_pos(target_ip)
+        self.init_distant_enemy(target_ip)
 
     def generate_new_id(self):
         if len(self.game.player_id) > 0:
@@ -507,6 +508,7 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
+        #We add the sender to our list
         self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
         self.game.distant_enemy_list[int(line.split(" ")[0])] = []
 
@@ -706,6 +708,14 @@ class Network:
             )
 
     ### --- Enemy related --- ###
+    def init_distant_enemy(self, target_ip):
+        """Send all local enemy data to other player when first connecting
+        """
+        basic_line = str(self.game.own_id) + " 8 " + "1/" #id + manage enemy + new enemy
+        for enemy in self.game.local_enemy_list:
+            line = basic_line + str(enemy.id) + "/" + str(enemy.tileX) + "/" + str(enemy.tileY)
+            self.send_message(line, target_ip)
+
     def send_enemy_update(self, e_id, pos, isNewEnemy=False):
         """Send a message when a enemy is created or moving
 
@@ -716,9 +726,8 @@ class Network:
         """
         #isNew value is 1 when it's a new enemy
         line = str(self.game.own_id) + " 8 "
-        line= line + "{isNew}/".format(isNew=1 if isNewEnemy else 0) 
-        line= line + str(e_id) + "/" + str(pos[0]) + "/" + str(pos[1]) 
-        print("[E UPDATE]", line)
+        line= line + "{isNew}".format(isNew=1 if isNewEnemy else 0) 
+        line= line + "/" + str(e_id) + "/" + str(pos[0]) + "/" + str(pos[1])
         self.broadcast_message(line)
 
     def receive_enemy_update(self, line):
@@ -729,11 +738,13 @@ class Network:
         """
         owner_id = get_id_from_all_packet(line)
         data = self.get_data_from(line)
-        data.split("/")
-        enemy_id = str(data[1])
-        pos= (str(data[2]), str(data[3]))
+        data = data.split("/")
+        enemy_id = int(data[1])
+        pos= (int(data[2]), int(data[3]))
         if int(data[0]) :
-            self.game.distant_enemy_list[owner_id] = distant_Enemy(self.game.map, enemy_id, pos)
+            self.game.distant_enemy_list[owner_id].append(distant_Enemy(self.game.world_map, enemy_id, pos))
+            print("Added e to enemy list of ", owner_id, " list is now", self.game.distant_enemy_list[owner_id])
         else :
+            print("Game full distna list", self.game.distant_enemy_list)
             enemy = find_enemy_by_id(self.game.distant_enemy_list[owner_id], enemy_id)
             enemy.walk(pos)
