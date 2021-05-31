@@ -28,8 +28,6 @@ class Inventory():
         # Surfaces
         self.surface = pg.Surface(self.background_sprite.get_size())
         self.surface.set_colorkey((0, 255, 0))
-        self.bis = None
-        self.bis_blurred = None
         # The following constants represent the width/height of the different
         # parts of the inventory on the sprite
         self.INV_WIDTH, self.INV_HEIGHT = (0, 324), (19, 279)
@@ -60,56 +58,15 @@ class Inventory():
         """Displays the inventory of the player"""
         # Blurring background
         if self.display:
-            self.bis_blurred = self.game.display.copy()
-            self.bis_blurred = self.blur_surface(self.bis_blurred)
-
-        while self.display:
-
-            # Blitting the background
-            self.bis = self.bis_blurred.copy()
-            self.surface.fill((0, 255, 0))
             self.surface.blit(self.background_sprite, (0, 0))
 
             # Bliting each item present in the inventory
             self.draw_items()
-            self.bis.blit(self.surface, self.screen_position)
             self.draw_item_cursor()
             self.draw_item_desc()
 
-            for event in pg.event.get():
-                # Quitting the game
-                if event.type == pg.QUIT:
-                    self.display = False
-                    self.game.quit()
-                # If a key is pressed
-                if event.type == pg.KEYDOWN:
-                    # Inventory key
-                    if event.key == pg.K_i:
-                        self.close_inventory()
-                # Handling descriptions
-                if event.type == pg.MOUSEBUTTONDOWN and event.button == 3 and not self.drag:
-                    if self.detect_item_inv(*event.pos):
-                        item_on_mouse = self.inv_grid[self.gtoc_y(
-                            event.pos[1])][self.gtoc_x(event.pos[0])]
-                    elif self.detect_item_eq(*event.pos):
-                        item_on_mouse = self.equipment[self.gtoc_x(
-                            event.pos[0])]
-                    # If the item is already displaying a description we close it
-                    if item_on_mouse.display_desc:
-                        self.current_desc = None
-                        item_on_mouse.display_desc = False
-                    # Else we display his description
-                    else:
-                        self.current_desc = item_on_mouse.item_desc
-                        item_on_mouse.display_desc = True
-                # Drag and drop handling
-                if not self.current_desc:
-                    self.drag_and_drop(event)
+            self.game.display.blit(self.surface, self.screen_position)
 
-            # Bliting the inventory scene to the game
-            self.game.window.blit(self.bis, (0, 0))
-            pg.display.update()
-            self.clock.tick(70)
 
     def drag_and_drop(self, event):
         """Handles the drag and drop in the inventory
@@ -219,7 +176,7 @@ class Inventory():
         if self.current_item:
             self.surface.blit(self.current_item.item_sprite,
                               (self.current_item.item_rect.x, self.current_item.item_rect.y))
-            self.bis.blit(self.surface, self.screen_position)
+            self.game.display.blit(self.surface, self.screen_position)
 
     def draw_items(self):
         """Draws the items in the inventory and equipment"""
@@ -244,7 +201,7 @@ class Inventory():
                     self.surface.get_height() // 6 + 159
                 self.current_desc.rect.width, self.current_desc.rect.height = 128, 25
             # Before the next "if" statement because can't blit a none object
-            self.bis.blit(self.current_desc.surface,
+            self.game.display.blit(self.current_desc.surface,
                           (self.screen_position[0] + self.surface.get_width()
                            + 30, self.screen_position[1] + self.surface.get_height() // 6))
             # Every "draw_desc()" method returns 1 except the one for the consumables because they
@@ -287,16 +244,6 @@ class Inventory():
             else:
                 print(
                     f"[Inventory.add_items()] : Impossible to add item {item} because inventory is full")
-
-    def blur_surface(self, surface):
-        """Blurs the "bis blurred" display"""
-        for i in range(1, 4):
-            surface = pg.transform.smoothscale(
-                surface, (RESOLUTION[0] * i, RESOLUTION[1] * i))
-            surface = pg.transform.smoothscale(
-                surface, (RESOLUTION[0] // i * 2, RESOLUTION[1] // i * 2))
-            surface = pg.transform.smoothscale(surface, RESOLUTION)
-        return surface
 
     def close_inventory(self):
         """Closes the inventory by setting flags to false"""

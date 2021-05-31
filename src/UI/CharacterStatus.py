@@ -11,11 +11,13 @@ The text is generated from the player statistics
 """
 
 import pygame as pg
+from pygame.constants import BLEND_RGB_MULT
 from src.config.assets import ingame_menus_folder, fonts_folder
 from os import path
 from src.config.colors import DESC_TEXT_COLOR, HP_GREEN, HP_RED, WHITE
 from src.config.fonts import CASCADIA, CASCADIA_BOLD
 from src.interface import Text
+from src.config.window import RESOLUTION
 
 
 class CharacterStatus():
@@ -83,26 +85,16 @@ class CharacterStatus():
 
     def draw(self):
         """Displays the character status menu"""
-        self.flag = False
-        
-        # Things to do only once "before" the display
         if self.display:
-            bis_blurred = self.game.display.copy()
-            bis_blurred = self.blur_surface(bis_blurred)
             self.game.player.update_stats()
             self.create_text()
 
-        # Displaying
-        while self.display:
-            
-            # Blitting the background
-            bis = bis_blurred.copy()
             self.surface.blit(self.background_sprite, (0, 0))
 
             # Health bar
             pg.draw.rect(self.surface, HP_RED, (8, 466, 136, 22))
             pg.draw.rect(self.surface, HP_GREEN,
-                         (8, 466, self.hp_ratio * 136, 22))
+                            (8, 466, self.hp_ratio * 136, 22))
 
             # Displaying our texts
             for value in self.static_texts.values():
@@ -110,28 +102,5 @@ class CharacterStatus():
             for value in self.dynamic_texts.values():
                 value.display_text()
 
-            bis.blit(self.surface, self.screen_position)
+            self.game.display.blit(self.surface, self.screen_position)
 
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.display = False
-                    self.game.quit()
-                if event.type == pg.KEYDOWN:
-                    # If we press tab, display the character status menu
-                    if event.key == pg.K_TAB:
-                        self.display = False
-
-            self.game.window.blit(bis, (0, 0))
-            self.flag = True
-            pg.display.update()
-            self.clock.tick(30)
-
-    def blur_surface(self, surface):
-        """Blurs the bis_blurred display"""
-        for i in range(1, 4):
-            surface = pg.transform.smoothscale(
-                surface, (self.game.resolution[0] * i, self.game.resolution[1] * i))
-            surface = pg.transform.smoothscale(
-                surface, (self.game.resolution[0] // i * 2, self.game.resolution[1] // i * 2))
-            surface = pg.transform.smoothscale(surface, self.game.resolution)
-        return surface

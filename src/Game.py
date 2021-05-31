@@ -16,6 +16,7 @@ from src.config.window import RESOLUTION, TILE_SIZE
 from src.config.colors import BLACK, WHITE
 from src.UI import CharacterStatus, Chat
 
+
 class Game:
     """The game class"""
 
@@ -46,7 +47,7 @@ class Game:
 
         # -------MAP------- #
         self.world_map = Map("./src/maps/map1/map1.txt")
-        # Chest list 
+        # Chest list
         self.chest_list = []
         # ------PLAYER----- #
         self.player = Player(self)
@@ -75,35 +76,44 @@ class Game:
     def check_events(self):
         "Checks for events in our game"
         for event in pg.event.get():
+
             if event.type == pg.QUIT:
                 self.quit()
             if self.menu_running:
                 self.current_menu.check_events(event)
             if self.playing:
                 if event.type == pg.MOUSEBUTTONDOWN:
-                    if event.button==3:
-                        # Moving the player
-                        dest = self.world_map.get_clicked_tile()
-                        if self.world_map.is_walkable_tile(*dest):
-                            self.player.update_path(dest)
-                    if event.button==1:
+                    if event.button == 3:
+                        ### --- INVENTORY HANDLING --- ###
+                        if self.player.inventory.display:
+                            self.handle_inventory_events(event)
+                        else:
+                            ### --- PLAYER MOVEMENT --- ###
+                            dest = self.world_map.get_clicked_tile()
+                            if self.world_map.is_walkable_tile(*dest):
+                                self.player.update_path(dest)
+                    if event.button == 1:
                         # Using a chest
                         pX, pY = self.player.tileX, self.player.tileY
                         tileX, tileY = self.world_map.get_clicked_tile()
-                        if  self.is_chest_clickable("local", (pX, pY), (tileX, tileY)):
+                        if self.is_chest_clickable("local", (pX, pY), (tileX, tileY)):
                             # Here give the loots
-                            self.world_map.local_chests[tileY][tileX].use_chest(self.player)
+                            self.world_map.local_chests[tileY][tileX].use_chest(
+                                self.player)
                             self.send_update_chests((tileX, tileY))
-                        if  self.is_chest_clickable("dist", (pX, pY), (tileX, tileY)):
+                        if self.is_chest_clickable("dist", (pX, pY), (tileX, tileY)):
                             # Here give the loots
                             self.request_chest((tileX, tileY))
                 if event.type == pg.KEYDOWN:
                     # If we press tab, display the character status menu
                     if event.key == pg.K_TAB:
-                        self.character_status.display = True
+                        self.character_status.display = not self.character_status.display
                     if event.key == pg.K_i:
-                        self.player.inventory.display = True
+                        self.player.inventory.display = not self.player.inventory.display
                 self.chat.event_handler(event)
+            # Inventory drag and drop
+            if not self.player.inventory.current_desc and self.player.inventory.display:
+                self.player.inventory.drag_and_drop(event)
 
                 # Here we are checking inputs when the game is in the "playing" state
 
@@ -159,11 +169,11 @@ class Game:
         # every other movement of other players which he is in
         # I didn't find a way to make it easier and I think just ignoring
         # when you get your own movement is a good way to proceed
-        except KeyError: 
-            pass 
+        except KeyError:
+            pass
 
     ### -- CHEST RELATED -- ###
-    
+
     def request_chest(self, pos):
         """Sends a request to the player which owns
         the chest to get what's inside of it 
@@ -175,17 +185,19 @@ class Game:
         owner_ip = ""
         try:
             for ip, id in self.player_id.items():
-                if id==owner_id:
+                if id == owner_id:
                     owner_ip = ip
         except:
             print("[Chests] Player not found in id list")
         else:
-            # Building the packet 
-            msg = str(self.own_id) + " 6 " + "request_" + str(pos[0]) + "/" + str(pos[1])
+            # Building the packet
+            msg = str(self.own_id) + " 6 " + "request_" + \
+                str(pos[0]) + "/" + str(pos[1])
             msg += "_" + str(self.player.inventory.free_slots_number())
             self.network.send_message(msg, owner_ip)
-            print("[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))
-    
+            print(
+                "[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))
+
     def send_update_chests(self, pos):
         """Sends an update to other players when you
         open your own local chest
@@ -193,7 +205,8 @@ class Game:
         Args:
             pos (tuple(int)): position of the chest
         """
-        udpate_msg = str(self.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
+        udpate_msg = str(self.own_id) + " 6 " + "update" + \
+            "_" + str(pos[0]) + "/" + str(pos[1])
         self.network.send_global_message(udpate_msg)
 
     def is_chest_clickable(self, type, pos, tiles):
@@ -208,19 +221,51 @@ class Game:
         Returns:
             [type]: [description]
         """
-        
-        tileX, tileY = tiles 
-        pX, pY = pos 
+
+        tileX, tileY = tiles
+        pX, pY = pos
 
         # Local chests
-        if type=="local":   
+        if type == "local":
             return self.world_map.is_visible_tile(tileX, tileY) and \
-                    self.world_map.local_chests[tileY][tileX] and \
-                    self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
-                    self.world_map.local_chests[tileY][tileX].is_opened
+                self.world_map.local_chests[tileY][tileX] and \
+                self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
+                self.world_map.local_chests[tileY][tileX].is_opened
         # Distant chests
-        elif type=="dist":
+        elif type == "dist":
             return self.world_map.is_visible_tile(tileX, tileY) and \
-                    self.world_map.dist_chests[tileY][tileX] and \
-                    self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
-                    self.world_map.dist_chests[tileY][tileX].is_opened
+                self.world_map.dist_chests[tileY][tileX] and \
+                self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
+                self.world_map.dist_chests[tileY][tileX].is_opened
+
+    ### -- INVENTORY RELATED -- ###
+
+    def handle_inventory_events(self, event):
+        """Handles the events of the inventory (used
+        to fix a bug that pauses the game)
+
+        Args:
+            event (pygame.Event): pygame event object
+        """
+
+        inventory = self.player.inventory
+        item_on_mouse = None
+        
+        # Item taken in the inventory
+        if inventory.detect_item_inv(*event.pos):
+            item_on_mouse = inventory.inv_grid[inventory.gtoc_y(
+                event.pos[1])][inventory.gtoc_x(event.pos[0])]
+        # Item taken in the equipment
+        elif inventory.detect_item_eq(*event.pos):
+            item_on_mouse = inventory.equipment[inventory.gtoc_x(
+                event.pos[0])]
+        # If the item is already displaying a description we close it
+        if item_on_mouse and item_on_mouse.display_desc:
+            inventory.current_desc = None
+            item_on_mouse.display_desc = False
+        # Else we display his description
+        else:
+            inventory.current_desc = item_on_mouse.item_desc
+            item_on_mouse.display_desc = True
+        if event.type == pg.QUIT:
+            self.quit()
