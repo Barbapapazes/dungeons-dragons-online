@@ -6,7 +6,6 @@ import time
 import random
 import threading
 from src.Player import DistantPlayer
-<<<<<<< HEAD
 from src.Map import dict_img_obj, Chest, DistantChest
 from src.config.network import (
     CLIENT_PATH,
@@ -35,12 +34,6 @@ from src.Item import (
     ConsumableItem,
     OresItem,
 )
-=======
-from src.Map import Chest, DistantChest, dict_img_obj
-from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE, CHAT, CHEST
-from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet, get_id_from_all_packet
-from src.Item import CONSUMABLE_ITEM, COMBAT_ITEM, ORES_ITEM, CombatItem, ConsumableItem, OresItem
->>>>>>> fd969f677b9944869b374b45a388c6545cdf5022
 from os import path
 import traceback
 
