@@ -1,152 +1,162 @@
-#include <unistd.h>
 #include <stdio.h>
+#include <string.h> //strlen
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <errno.h>
+#include <unistd.h>    //close
+#include <arpa/inet.h> //close
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <signal.h>
-#include <sys/wait.h>
 #include <netinet/in.h>
-#include <netdb.h>
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
+#include <sys/stat.h>
 #include <fcntl.h>
-#include <arpa/inet.h>
+#include <sys/sendfile.h>
+#include <strings.h>
+#include <signal.h>
+#include <sys/epoll.h>
 #include "serialization.h"
 
-#define BUFFSIZE 1500
+#define TRUE 1
+#define FALSE 0
+#define BUFSIZE 1025
+#define MAXCLIENT 2000
 
-/**
- * @brief stop the process if an error occurs and print the error
- * 
- */
 void stop(char *msg)
 {
     perror(msg);
     exit(EXIT_FAILURE);
 }
 
-/**
- * @brief Does nothing, used to unpause
- * 
- */
 void activation(int signum)
 {
     return;
 }
 
 /**
- * @brief end the program and avoid orphans children
- * 
+ * @brief return the first index available to store a socket
+ * @return int : -1 if socket array is full
  */
-void end(int signum)
+int first_available_socket(int *socket, int size)
 {
-    pid_t pid = getpid();         //get pid of the current process
-    killpg(getpgid(pid), SIGINT); //kill all process that have the same group id as the current process (here kill all child and the current process)
-    exit(EXIT_SUCCESS);           //end the process if SIGINT hasn't already done it
+    for (int i = 0; i < size; i++)
+        if (socket[i] == 0)
+            return i;
+    return -1;
 }
 
 int main(int argc, char *argv[])
 {
-    signal(SIGUSR1, &end); // if SIGUSR1 is received execute end function
     signal(SIGUSR2, &activation);
+    int opt = TRUE;
+    //master socket is the server socket that will receive new connection curfds is current file descriptors (number of connection)
+    //epollfd is the file descriptor that will be used to controll the epoll
+    int master_socket, addrlen, new_socket, activity, client_socket[MAXCLIENT], valread, curfds, epollfd;
+    bzero(client_socket, MAXCLIENT);
+    struct epoll_event ev;      // struct used to initialize the epoll
+    struct epoll_event *events; // array that will contains fd with an activity
 
-    char buffer[BUFFSIZE]; //Buffer of 8192 char
-    int n;                 //counter of char received
-    pid_t childpid, pid;   //pid used for fork, pid used for group id
-
-    /* Packet */
+    struct sockaddr_in serv_addr;
+    char buffer[BUFSIZE];                                     //data buffer of 1K
     game_packet game_data = {0, -1, ""};                      // initialize a game_packet structure that will contain all the needed information
     static const game_packet empty_game_packet = {0, -1, ""}; // initialize a game_packet structure that will be used to reset the first one
 
-    /* Socket */
-    int newsockfd;                                //file descriptor that will contains the client socket
-    int sockfd = socket(PF_INET, SOCK_STREAM, 0); //server socket where client connects.
-    int true = 1;                                 // var used in setsockopt
+    if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        stop("socket");
+    }
 
-    // handle error
-    if (sockfd < 0)
-        stop("socket()");
-
-    if (argc != 3)
-        stop("argc");
-
-    /* Server */
-    struct sockaddr_in serv_addr;
-    bzero(&serv_addr, sizeof(serv_addr)); //initialize the serv_addr
-    serv_addr.sin_family = AF_INET;       //server address : ipv4
-
-    // set server adress
+    serv_addr.sin_family = AF_INET;
     if (inet_aton(argv[2], &serv_addr.sin_addr) == 0)
         stop("inet_aton()");
-
-    // set server port
     serv_addr.sin_port = htons(atoi(argv[1]));
 
-    // associate to sockfd serv_addr
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1)
-        stop("bind()");
-
+    if (bind(master_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        stop("bind");
+    }
     // wait for an activation
     pause();
 
-    // avoid the bind error by allowing re-use of the same port for the socket
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int));
-
-    // allows to queue up to 2000 connexions to the server
-    if (listen(sockfd, 2000) == -1)
-        stop("listen()");
-
-    int size = sizeof(serv_addr);
-
-    // wait for a connection to arrive on sockfd
-    if ((newsockfd = accept(sockfd, (struct sockaddr *)&serv_addr, (socklen_t *)&size)) == -1)
-        stop("accept()");
-
-    // set a group id to the process id
-    pid = getpid();
-    setpgid(pid, 0);
-
-    while (1)
+    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0)
     {
-        //the father waits that a new connection occurs to fork again
-        // the child will stay alive while a connection is maintained and write on stdout.
-        if ((childpid = fork()) == 0) //fork the program so we can handle multiple tcp connection
+        stop("setsockopt");
+    }
+    if (listen(master_socket, 30) < 0)
+    {
+        stop("listen");
+    }
+
+    //accept the incoming connection
+    addrlen = sizeof(serv_addr);
+
+    // setup epoll add the master socket to the wait list
+    epollfd = epoll_create(MAXCLIENT);
+    ev.events = EPOLLIN | EPOLLET;
+    ev.data.fd = master_socket;
+
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, master_socket, &ev) < 0)
+    {
+        stop("epoll_ctl_add_master");
+    }
+    events = calloc(MAXCLIENT, sizeof ev);
+    curfds = 1;
+
+    while (TRUE)
+    {
+        // wait for an activity
+        activity = epoll_wait(epollfd, events, curfds, -1);
+        if (activity == -1)
         {
-            close(sockfd); //if we are in child the sockfd is no more needed so we close it
-            n = recv(newsockfd, buffer, BUFFSIZE, 0);
-
-            do
-            {
-                // handle error
-                if ((n == -1))
-                    stop("recv()");
-
-                // ensure that buffer has a final character
-                buffer[n] = '\0';
-
-                // format the packet received
-                game_data = deserialize_packet((unsigned char *)buffer);
-                sprintf(buffer, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
-                write(STDOUT_FILENO, buffer, strlen(buffer));
-
-                // send acknowledgement to the client (used for ping)
-                send(newsockfd, "1", 2, 0);
-                game_data = empty_game_packet;
-
-            } while ((n = recv(newsockfd, buffer, BUFFSIZE, 0)) > 0); //write the message in STDOUT_FILENO
-
-            if ((close(newsockfd))) //close the attributed socket to avoid bind error
-                stop("close");
-
-            return 0; // if the message has not been fully received reiterate the process
+            stop("epoll_wait");
         }
-        else
+
+        for (int n = 0; n < activity; ++n)
         {
-            if ((newsockfd = accept(sockfd, (struct sockaddr *)&serv_addr, (socklen_t *)&size)) == -1) //accept a new connection
-                stop("accept()");
+            if (events[n].data.fd == master_socket)
+            {
+
+                if ((new_socket = accept(master_socket, (struct sockaddr *)&serv_addr, (socklen_t *)&addrlen)) < 0)
+                {
+                    stop("accept");
+                }
+
+                if (new_socket != 0)
+                {
+                    client_socket[first_available_socket(client_socket, MAXCLIENT)] = new_socket;
+                    ev.events = EPOLLIN | EPOLLET;
+                    ev.data.fd = new_socket;
+                    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, new_socket, &ev) < 0)
+                    {
+                        stop("epoll_ctl_add");
+                    }
+                    curfds++;
+                }
+            }
+            else
+            {
+                if ((valread = recv(events[n].data.fd, buffer, 2048, 0)) == 0)
+                {
+                    // disconnection
+                    epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, &ev);
+                    curfds--;
+                    close(events[n].data.fd);
+                    client_socket[n] = 0;
+                }
+                else
+                {
+
+                    buffer[valread] = '\0'; // -1 to remove le \n
+                    if (strcmp(buffer, "") == 0)
+                        break;
+
+                    // format the packet received
+                    game_data = deserialize_packet((unsigned char *)buffer);
+                    sprintf(buffer, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
+                    write(STDOUT_FILENO, buffer, strlen(buffer));
+                    game_data = empty_game_packet;
+                }
+            }
         }
     }
-    close(newsockfd);
-    close(sockfd);
-    exit(EXIT_SUCCESS);
+    return 0;
 }
