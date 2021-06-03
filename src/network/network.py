@@ -4,9 +4,10 @@ import os
 import queue
 import signal
 import time
+import random
 import threading
 from src.Player import DistantPlayer
-from src.Map import dict_img_obj
+from src.Map import Chest, DistantChest, dict_img_obj
 from src.config.network import CLIENT_PATH, SERVER_PATH, FIRST_CONNECTION, NEW_IP, DISCONNECT, CHANGE_ID, MOVE, CHAT, CHEST
 from src.utils.network import enqueue_output, get_ip, check_message, get_id_from_packet, get_ip_from_packet, get_id_from_all_packet
 from src.Item import CONSUMABLE_ITEM, COMBAT_ITEM, ORES_ITEM, CombatItem, ConsumableItem, OresItem
@@ -162,15 +163,21 @@ class Network:
                     print("[Chests] Player [{}] requested the chest at position ".format(player_id), parsed_data[1:])
                     self.handle_requested_chest(parsed_data[1:], player_id)
                 # If we receive a packet containing the items ("items_Plate/Armor_Axe_Sword...")
-                if parsed_data[0] == "items":
-                    print("[Chests] Your chest request has been accepted")
-                    self.get_chests_items(parsed_data[1:])
+                if parsed_data[0] == "ownership":
+                    print("[Chests] You receveid the ownership of the chest")
+                    self.take_ownership(parsed_data[1:], open=True)
+                # If we receive a packet of a player that disconnects
+                if parsed_data[0] == "disconnect":
+                    self.take_ownership(parsed_data[1:], open=False)
+                    self.send_new_ownership()
                 # If we receive a refuse packet ("refuse")
                 if parsed_data[0] == "refuse":
                     print("[Chests] Your chest request has been refused, your inventory might be full")
                 # If we receive an update packet ("update_13/20"")
                 if parsed_data[0] == "update":
                     self.update_chests(parsed_data[1:])
+                if parsed_data[0] == "changeowner":
+                    self.change_owner(parsed_data[1:])
                     
             elif action == CHAT:
                 self.chat_message(line)
@@ -532,56 +539,41 @@ class Network:
         pos = tuple(map(int, parsed_data[0].split("/")))
         inv_slots = parsed_data[1]
         
+        # Getting back player ip
         try: 
             for ip, id in self.game.player_id.items():
                 if str(id)==str(player_id):
                     player_ip = ip
         except:
             print("[Chests] : Can't find player in id list")
+
+        # If we are the owner of the chest
+        if self.game.world_map.local_chests[pos[1]][pos[0]]:
+                # Checking if player has enough slots in inventory to get the full chest
+                if int(inv_slots) >= len(self.game.world_map.local_chests[pos[1]][pos[0]].loots):
+
+                    # Building the packet and sending message
+                    msg = str(self.game.own_id) + " 6 " + "ownership" + "_" + str(pos[0]) + "/" + str(pos[1])
+                    print("[Chests] : Gave property to", player_id)
+                    self.send_message(msg, player_ip)
+
+                    # Sending packet to inform of the ownership change
+                    print("[Chests] : Sending ownership change")
+
+                    # Updating chest locally
+                    self.game.world_map.local_chests[pos[1]][pos[0]] = None 
+                    self.game.world_map.dist_chests[pos[1]][pos[0]] = DistantChest(pos, int(player_id))
+
+                    udpate_msg = str(self.game.own_id)  + " 6 " + "changeowner" + "_" + str(pos[0]) + "/" + str(pos[1]) + "_" + str(player_id)
+                    self.send_global_message(udpate_msg)
+                else:
+                    # Sending a refuse message
+                    msg = str(self.game.own_id) + " 6 " + "refuse"
+                    self.send_message(msg, player_ip)
         else:
-            # Checking if player has enough slots in inventory to get the full chest
-            if int(inv_slots) >= len(self.game.world_map.local_chests[pos[1]][pos[0]].loots):
-
-                # Building the packet
-                msg = str(self.game.own_id) + " 6 " + "items"
-                for _ in range(len(self.game.world_map.local_chests[pos[1]][pos[0]].loots)):
-                    item = self.game.world_map.local_chests[pos[1]][pos[0]].loots.pop()
-                    item_name = item.name 
-                    item_name = item_name.replace(" ", "/")
-                    msg += "_" + item_name 
-                
-                # Sending approval packet
-                self.send_message(msg, player_ip)
-                # Updating own world to make the chest opened
-                self.game.world_map.local_chests[pos[1]][pos[0]].is_opened = True
-                self.game.world_map.local_chests[pos[1]][pos[0]].image = dict_img_obj["chestO"].convert_alpha()
-                self.game.world_map.local_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
-                print("[Chests] Accepted request from [{}]".format(player_id))
-
-                # Sending packet to update chest for everyone (actually update = inform that a chest is opened)
-                udpate_msg = str(self.game.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
-                self.send_global_message(udpate_msg)
-            else:
-                # Sending a refuse message
-                msg = str(self.game.own_id) + " 6 " + "refuse"
-                self.send_message(msg, player_ip)
-
-    def get_chests_items(self, parsed_data):
-        """Transforms the parsed packet data containing item
-        names into real items for us
-
-        Args:
-            parsed_data (str): the parsed packet data
-        """
-        for item in parsed_data:
-            item_name = str(item).replace("/", " ")
-            if item_name in COMBAT_ITEM:
-                new_item = CombatItem(item_name)
-            elif item_name in CONSUMABLE_ITEM:
-                new_item = ConsumableItem(item_name)
-            elif item_name in ORES_ITEM:
-                new_item = OresItem(item_name)
-            self.game.player.inventory.add_items([new_item])
+            # Sending a refuse message
+            msg = str(self.game.own_id) + " 6 " + "refuse"
+            self.send_message(msg, player_ip)
 
     def update_chests(self, parsed_data):
         """Updates a chest when an update packet is received
@@ -599,5 +591,51 @@ class Network:
             self.game.world_map.dist_chests[pos[1]][pos[0]].is_opened = True
             self.game.world_map.dist_chests[pos[1]][pos[0]].image = dict_img_obj["d_chestO"].convert_alpha()
             self.game.world_map.dist_chests[pos[1]][pos[0]].image.set_colorkey((0, 0, 0))
-        
 
+    def take_ownership(self, parsed_data, open=False):
+        """Take the ownership of the chest if the ownership packet is receveid, and then
+        automatically opens it because we don't want the player to click two times on it to open it
+
+        Args:
+            parsed_data (str): The packet parsed data
+        """
+        pos = tuple(map(int, parsed_data[0].split("/")))
+        # Changing location of chest to the map of local chests
+        self.game.world_map.dist_chests[pos[1]][pos[0]] = None 
+        self.game.world_map.local_chests[pos[1]][pos[0]] = Chest(pos)
+        # Opening the chest 
+        if open:
+            # Sending packet to update chest for everyone (actually update = inform that a chest is opened)
+            udpate_msg = str(self.game.own_id)  + " 6 " + "update" + "_" + str(pos[0]) + "/" + str(pos[1]) 
+            self.send_global_message(udpate_msg)
+            self.game.world_map.local_chests[pos[1]][pos[0]].use_chest(self.game.player)
+        
+    def change_owner(self, parsed_data):
+        """Changes the owner of the distant chest when a change owner packet
+        is received. If it's our chest, do nothing
+
+        Args:
+            parsed_data (str): the parsed packet data 
+        """
+        pos = tuple(map(int, parsed_data[0].split("/")))
+        player_id = parsed_data[1]
+        if self.game.world_map.dist_chests[pos[1]][pos[0]]:
+            self.game.world_map.dist_chests[pos[1]][pos[0]].owner_id = int(player_id)
+    
+    def send_chests_disconnect(self):
+        """Sends to the first player in our player ip dict our chests
+        before disconnecting
+        """
+        print("[Chests] Sending chests before disconnetion")
+        for sublist in self.game.world_map.local_chests:
+            for chest in sublist:
+                if chest:
+                    msg = str(self.game.own_id) + " 6 " + "disconnect" + str(chest.tileX) + "/" + str(chest.tileY)
+                    self.send_message(msg, random.choice(list(self.game.network.connections.keys())))
+
+    def send_new_ownership(self, parsed_data):
+        """Sends the fact that we took ownership of the chest to other 
+        players"""
+        pos = tuple(map(int, parsed_data[0].split("/")))
+        msg = str(self.game.own_id) + " 6 " + "changeowner" + str(pos[0]) + "/" + str(pos[1]) + "_" + str(self.game.own_id)
+        self.send_global_message(msg)
