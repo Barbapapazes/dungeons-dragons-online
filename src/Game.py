@@ -2,7 +2,7 @@
 our game"""
 
 import signal
-import sys
+import sys, time
 from os import path
 import pygame as pg
 from src.config.assets import menus_folder
@@ -113,6 +113,8 @@ class Game:
         self.running, self.playing = False, False
         self.current_menu.displaying = False
         self.client.disconnect()
+        self.network.send_chests_disconnect()
+        time.sleep(0.5)
         pg.quit()
         sys.exit()
 
