@@ -47,8 +47,8 @@ struct nlist *lookup(char *s)
 }
 
 char *hash_strdup(char *);
-// install: put (name, defn) in hashtab
-void install(char *name, int value)
+// add_hash: put (name, defn) in hashtab
+void add_hash(char *name, int value)
 {
     struct nlist *np;
     unsigned hashval;
@@ -66,7 +66,7 @@ void install(char *name, int value)
 }
 
 // remove (name,value) from hashtab handle link between linked list
-int uninstall(char *name, int value)
+int remove_hash(char *name, int value)
 {
     struct nlist *np, *prev;
     prev = NULL;
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
             memset(buffer, 0, 80);
             port[strlen(port) - 1] = '\0'; // remove the \n from the string
             sprintf(buffer, "%s:%s", ip, port);
-            install(buffer, connection(ip, port));
+            add_hash(buffer, connection(ip, port));
             memset(stdin_read, 0, size);
         }
 
@@ -313,8 +313,8 @@ int main(int argc, char *argv[])
                 return -1;
             if (close(socket->value) == -1)
                 stop("close socket");
-            if (uninstall(socket->name, socket->value) == -1)
-                stop("uninstall");
+            if (remove_hash(socket->name, socket->value) == -1)
+                stop("remove_hash");
             memset(buffer, 0, 80);
 
             memset(stdin_read, 0, size);
