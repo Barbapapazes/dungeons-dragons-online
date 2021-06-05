@@ -32,6 +32,13 @@ unsigned char *serialize_packet(game_packet g)
     return s_packet;
 }
 
+int get_size_of_packet(unsigned char *s_packet)
+{
+    int data_len;
+    memcpy(&data_len, s_packet + 2 * sizeof(int), sizeof(int));
+    return 3 * sizeof(int) + data_len * sizeof(char);
+}
+
 game_packet deserialize_packet(unsigned char *s_packet)
 {
     game_packet g;
