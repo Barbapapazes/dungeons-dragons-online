@@ -2,7 +2,8 @@
 our game"""
 
 import signal
-import sys, time
+import sys
+import time
 from os import path
 import pygame as pg
 from src.config.assets import menus_folder
@@ -255,7 +256,7 @@ class Game:
 
         inventory = self.player.inventory
         item_on_mouse = None
-        
+
         # Item taken in the inventory
         if inventory.detect_item_inv(*event.pos):
             item_on_mouse = inventory.inv_grid[inventory.gtoc_y(

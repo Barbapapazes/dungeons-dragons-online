@@ -191,7 +191,6 @@ class Network:
                 parsed_data = data.split("_")
                 # If we receive a packet composed of all chests positions ("positions_13/2/10_12/1/11...")
                 if parsed_data[0] == "positions":
-                    print("[Chests] You received the host's chests")
                     self.game.world_map.generate_distant_chests(
                         parsed_data[1:]
                     )
@@ -211,7 +210,6 @@ class Network:
                 # If we receive a packet of a player that disconnects
                 if parsed_data[0] == "disconnect":
                     print("[Chests] You received a disconnection packet containing a chest")
-                    print(parsed_data[1:])
                     self.take_ownership(parsed_data[1:], open=False)
                     self.send_new_ownership(parsed_data[1:])
                 # If we receive a refuse packet ("refuse")
@@ -551,7 +549,7 @@ class Network:
                 self._client.stdin.write(word)
                 self._client.stdin.flush()
 
-    def send_global_message(self, msg):
+    def send_global_message(self, msg, chat=False):
         """SOON DEPRECATED
         A function that sends to every other player in the game
         instead of juste one
@@ -559,7 +557,10 @@ class Network:
         Args:
             msg (str): the message/packet to send
         """
-        self.send_message(msg, "all")
+        try:
+            self.send_message(msg, "all", chat=chat)
+        except:
+            print("Couldn't send a global message")
 
     ### -- CHESTS RELATED -- ###
 

@@ -28,7 +28,6 @@ class Client:
             except ValueError:
                 print("message error")
                 return
-
         print("client send : ", msg)
         self.game.network.send_message(msg, "all", chat)
 
