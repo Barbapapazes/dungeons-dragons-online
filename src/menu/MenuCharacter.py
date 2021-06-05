@@ -86,6 +86,7 @@ class MenuCharacter(Menu):
             self.game.own_id = 10  # We create the party so we have the basic id : 10
             self.game.playing = True
             self.game.player.set_nickname(self.name_input.get_text())
+            self.game.world_map.generate_local_chests()
         if self.join_button.is_clicked(event):
             self.game.current_menu = self.game.join_menu
             self.displaying = False

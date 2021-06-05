@@ -122,8 +122,11 @@ class Game:
         print("[Game] Quiting game ...")
         self.running, self.playing = False, False
         self.current_menu.displaying = False
+        try:
+            self.network.send_chests_disconnect()
+        except:
+            print("Couldn't send chest on disconnection : nobody connected")
         self.client.disconnect()
-        self.network.send_chests_disconnect()
         time.sleep(0.5)
         pg.quit()
         sys.exit()
@@ -266,7 +269,7 @@ class Game:
             inventory.current_desc = None
             item_on_mouse.display_desc = False
         # Else we display his description
-        else:
+        elif item_on_mouse and not item_on_mouse.display_desc:
             inventory.current_desc = item_on_mouse.item_desc
             item_on_mouse.display_desc = True
         if event.type == pg.QUIT:

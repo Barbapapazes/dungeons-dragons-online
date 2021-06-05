@@ -26,14 +26,6 @@ from src.utils.network import (
     get_ip_from_packet,
     get_id_from_all_packet,
 )
-from src.Item import (
-    CONSUMABLE_ITEM,
-    COMBAT_ITEM,
-    ORES_ITEM,
-    CombatItem,
-    ConsumableItem,
-    OresItem,
-)
 from os import path
 import traceback
 
@@ -162,7 +154,6 @@ class Network:
             # binary flux that we need to decode before manipulate it
             line = line.decode("utf8")
             line = line[:-1]  # delete the final `\n`
-            print(line)
             action = self.get_action_from(line)  # get action from packet
 
             # first connection of a client
@@ -200,6 +191,7 @@ class Network:
                 parsed_data = data.split("_")
                 # If we receive a packet composed of all chests positions ("positions_13/2/10_12/1/11...")
                 if parsed_data[0] == "positions":
+                    print("[Chests] You received the host's chests")
                     self.game.world_map.generate_distant_chests(
                         parsed_data[1:]
                     )
@@ -218,8 +210,10 @@ class Network:
                     self.take_ownership(parsed_data[1:], open=True)
                 # If we receive a packet of a player that disconnects
                 if parsed_data[0] == "disconnect":
+                    print("[Chests] You received a disconnection packet containing a chest")
+                    print(parsed_data[1:])
                     self.take_ownership(parsed_data[1:], open=False)
-                    self.send_new_ownership()
+                    self.send_new_ownership(parsed_data[1:])
                 # If we receive a refuse packet ("refuse")
                 if parsed_data[0] == "refuse":
                     print(
@@ -306,7 +300,6 @@ class Network:
         for id, player in self.game.other_player.items():
             pX, pY = player.get_current_pos()
             pos_msg = str(id) + " 4 " + str(pX) + "/" + str(pY)
-            print(pos_msg)
             self.send_message(pos_msg, target_ip)
 
         # Send our current position to the new connexion
@@ -550,7 +543,6 @@ class Network:
             for i in range(2, len(msg)):
                 my_str += msg[i] + "_"
             mylist.append(my_str)
-            print("mylist : ", mylist)
             self._client.stdin.write(str.encode(ip + "\n"))
             self._client.stdin.flush()
             for word in mylist:
@@ -575,9 +567,11 @@ class Network:
         """This function is called when a client connects to
         the host of the game, after the ID change (to get the right owner ID for
         chests). It sends to every other players the position of the new client local chests"""
-        print("send own chests")
         local_chests_pos = self.game.world_map.local_chests_pos
         local_chests = self.game.world_map.local_chests
+
+        # Generating local chests
+        self.game.world_map.generate_local_chests()
 
         # Updating chests ID
         for pos in local_chests_pos:
@@ -699,15 +693,15 @@ class Network:
         before disconnecting
         """
         print("[Chests] Sending chests before disconnetion")
-        for sublist in self.game.world_map.local_chests:
-            for chest in sublist:
-                if chest:
-                    msg = str(self.game.own_id) + " 6 " + "disconnect" + str(chest.tileX) + "/" + str(chest.tileY)
-                    self.send_message(msg, random.choice(list(self.game.network.connections.keys())))
+        for pos in self.game.world_map.local_chests_pos:
+                    msg = str(self.game.own_id) + " 6 " + "disconnect" + "_" + str(pos[0]) + "/" + str(pos[1])
+                    player_ip = random.choice(list(self.game.player_id.keys()))
+                    self.send_message(msg, player_ip)
+                    time.sleep(0.2)
 
     def send_new_ownership(self, parsed_data):
         """Sends the fact that we took ownership of the chest to other 
         players"""
         pos = tuple(map(int, parsed_data[0].split("/")))
-        msg = str(self.game.own_id) + " 6 " + "changeowner" + str(pos[0]) + "/" + str(pos[1]) + "_" + str(self.game.own_id)
+        msg = str(self.game.own_id) + " 6 " + "changeowner" + "_" + str(pos[0]) + "/" + str(pos[1]) + "_" + str(self.game.own_id)
         self.send_global_message(msg)

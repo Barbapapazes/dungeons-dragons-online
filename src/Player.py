@@ -87,7 +87,10 @@ class Player:
             line = str(self.game.own_id) + " 4 " + \
                 str(self.tileX) + "/" + str(self.tileY)
             if is_initialized_id(self.game.own_id):
-                self.game.network.send_global_message(line)
+                try:
+                    self.game.network.send_global_message(line)
+                except:
+                    print("[Player] : Couldn't send movement (nobody connected)")
 
     def get_current_pos(self):
         "Return X, Y the current position"

@@ -106,8 +106,6 @@ class Map:
         self.local_chests_pos = []
         self.dist_chests_pos = []
         self.dist_chests = [[None for tileX in range(len(self.map[tileY]))] for tileY in range(len(self.map))]
-        # Generating local chests
-        self.generate_local_chests()
         
     def init_views(self, mini_size, mini_coeff):
         """Init array of every surface to blit on the screen (tiles & vision)"""
@@ -297,6 +295,7 @@ class Map:
             self.dist_chests_pos.append(position)
             self.dist_chests[position[1]][position[0]] = DistantChest(position, owner_id)
             self.map[position[1]][position[0]].wall = True
+            self.dist_chests_pos.append(position)
 
 class MapObject:
     """A class of object on map"""
