@@ -228,7 +228,7 @@ class Network:
 
             elif action == CHAT:
                 self.chat_message(line)
-            
+
             elif action == ENEMY:
                 self.receive_enemy_update(line)
 
@@ -508,7 +508,7 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
-        #We add the sender to our list
+        # We add the sender to our list
         self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
         self.game.distant_enemy_list[int(line.split(" ")[0])] = []
 
@@ -711,10 +711,31 @@ class Network:
     def init_distant_enemy(self, target_ip):
         """Send all local enemy data to other player when first connecting
         """
-        basic_line = str(self.game.own_id) + " 8 " + "1/" #id + manage enemy + new enemy
+        basic_line = str(self.game.own_id) + " 8 " + \
+            "1/"  # id + manage enemy + new enemy
         for enemy in self.game.local_enemy_list:
-            line = basic_line + str(enemy.id) + "/" + str(enemy.tileX) + "/" + str(enemy.tileY)
+            line = basic_line + str(enemy.id) + "/" + \
+                str(enemy.tileX) + "/" + str(enemy.tileY)
+            print("LINE INIT DISTANT ENNEMY", line)
+            time.sleep(0.5)
             self.send_message(line, target_ip)
+        """
+                
+        # Send the position of other players
+        for id, player in self.game.other_player.items():
+            pX, pY = player.get_current_pos()
+            pos_msg = str(id) + " 4 " + str(pX) + "/" + str(pY)
+            print(pos_msg)
+            self.send_message(pos_msg, target_ip)
+
+        # Send our current position to the new connexion
+        pX, pY = self.game.player.get_current_pos()
+        pos_msg = str(self.game.own_id) + " 4 " + str(pX) + "/" + str(pY)
+        self.send_message(pos_msg, target_ip)
+
+
+
+        """
 
     def send_enemy_update(self, e_id, pos, isNewEnemy=False):
         """Send a message when a enemy is created or moving
@@ -724,10 +745,11 @@ class Network:
             pos (tuple(int,int)): the position of the enemy we are updating
             isNewEnemy (bool): is True when it's the first time we are sending a packet about this enemy
         """
-        #isNew value is 1 when it's a new enemy
+        # isNew value is 1 when it's a new enemy
         line = str(self.game.own_id) + " 8 "
-        line= line + "{isNew}".format(isNew=1 if isNewEnemy else 0) 
-        line= line + "/" + str(e_id) + "/" + str(pos[0]) + "/" + str(pos[1])
+        line = line + "{isNew}".format(isNew=1 if isNewEnemy else 0)
+        line = line + "/" + str(e_id) + "/" + str(pos[0]) + "/" + str(pos[1])
+        print("LINE DE l'EMETEUR", line)
         self.broadcast_message(line)
 
     def receive_enemy_update(self, line):
@@ -736,15 +758,22 @@ class Network:
         Args :
             line : the content of the packet received
         """
+
+        print("francis la line : ", line)
         owner_id = get_id_from_all_packet(line)
         data = self.get_data_from(line)
         data = data.split("/")
+        print("DATA 0000000", data[0])
         enemy_id = int(data[1])
-        pos= (int(data[2]), int(data[3]))
-        if int(data[0]) :
-            self.game.distant_enemy_list[owner_id].append(distant_Enemy(self.game.world_map, enemy_id, pos))
-            print("Added e to enemy list of ", owner_id, " list is now", self.game.distant_enemy_list[owner_id])
-        else :
-            print("Game full distna list", self.game.distant_enemy_list)
-            enemy = find_enemy_by_id(self.game.distant_enemy_list[owner_id], enemy_id)
+        pos = (int(data[2]), int(data[3]))
+
+        if int(data[0]):
+            self.game.distant_enemy_list[owner_id].append(
+                distant_Enemy(self.game.world_map, enemy_id, pos))
+
+        else:
+            print("LEN OF DISTANT ENNEMY LIST",
+                  len(self.game.distant_enemy_list))
+            enemy = find_enemy_by_id(
+                self.game.distant_enemy_list[owner_id], enemy_id)
             enemy.walk(pos)
