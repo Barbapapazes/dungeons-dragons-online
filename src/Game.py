@@ -127,10 +127,6 @@ class Game:
         except:
             print("Couldn't send chest on disconnection : nobody connected")
         self.client.disconnect()
-<<<<<<< HEAD
-=======
-        self.network.send_chests_disconnect()
->>>>>>> c0949c5c46397b56a9d75bdf0e930705a60c9123
         time.sleep(0.5)
         pg.quit()
         sys.exit()
