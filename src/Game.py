@@ -52,7 +52,9 @@ class Game:
         self.chest_list = []
         # ------PLAYER----- #
         self.player = Player(self)
-        self.other_player = dict()  # key is the client id, value is a DistantPlayer instance
+        self.other_player = (
+            dict()
+        )  # key is the client id, value is a DistantPlayer instance
         # ------ENEMY------ #
         self.enemy_list = []
         # ------MENUS------ #
@@ -97,23 +99,35 @@ class Game:
                         # Using a chest
                         pX, pY = self.player.tileX, self.player.tileY
                         tileX, tileY = self.world_map.get_clicked_tile()
-                        if self.is_chest_clickable("local", (pX, pY), (tileX, tileY)):
+                        if self.is_chest_clickable(
+                            "local", (pX, pY), (tileX, tileY)
+                        ):
                             # Here give the loots
-                            self.world_map.local_chests[tileY][tileX].use_chest(
-                                self.player)
+                            self.world_map.local_chests[tileY][
+                                tileX
+                            ].use_chest(self.player)
                             self.send_update_chests((tileX, tileY))
-                        if self.is_chest_clickable("dist", (pX, pY), (tileX, tileY)):
+                        if self.is_chest_clickable(
+                            "dist", (pX, pY), (tileX, tileY)
+                        ):
                             # Here give the loots
                             self.request_chest((tileX, tileY))
                 if event.type == pg.KEYDOWN:
                     # If we press tab, display the character status menu
                     if event.key == pg.K_TAB:
-                        self.character_status.display = not self.character_status.display
+                        self.character_status.display = (
+                            not self.character_status.display
+                        )
                     if event.key == pg.K_i:
-                        self.player.inventory.display = not self.player.inventory.display
+                        self.player.inventory.display = (
+                            not self.player.inventory.display
+                        )
                 self.chat.event_handler(event)
             # Inventory drag and drop
-            if not self.player.inventory.current_desc and self.player.inventory.display:
+            if (
+                not self.player.inventory.current_desc
+                and self.player.inventory.display
+            ):
                 self.player.inventory.drag_and_drop(event)
 
                 # Here we are checking inputs when the game is in the "playing" state
@@ -127,6 +141,7 @@ class Game:
             self.network.send_chests_disconnect()
         except:
             print("Couldn't send chest on disconnection : nobody connected")
+        time.sleep(0.5)
         self.client.disconnect()
         time.sleep(0.5)
         pg.quit()
@@ -172,9 +187,9 @@ class Game:
             self.world_map.map[newY][newX].wall = True
         # This exception will be triggered when the player receives
         # his own movement, because when someone connects we send him
-        # every other movement of other players which he is in
+        #  every other movement of other players which he is in
         # I didn't find a way to make it easier and I think just ignoring
-        # when you get your own movement is a good way to proceed
+        #  when you get your own movement is a good way to proceed
         except KeyError:
             pass
 
@@ -182,7 +197,7 @@ class Game:
 
     def request_chest(self, pos):
         """Sends a request to the player which owns
-        the chest to get what's inside of it 
+        the chest to get what's inside of it
 
         Args:
             pos (tuple(int)): the position of the chest
@@ -197,12 +212,21 @@ class Game:
             print("[Chests] Player not found in id list")
         else:
             # Building the packet
-            msg = str(self.own_id) + " 6 " + "request_" + \
-                str(pos[0]) + "/" + str(pos[1])
+            msg = (
+                str(self.own_id)
+                + " 6 "
+                + "request_"
+                + str(pos[0])
+                + "/"
+                + str(pos[1])
+            )
             msg += "_" + str(self.player.inventory.free_slots_number())
             self.network.send_message(msg, owner_ip)
             print(
-                "[Chests] You requested chest {0}/{1} from player [{2}]".format(pos[0], pos[1], owner_id))
+                "[Chests] You requested chest {0}/{1} from player [{2}]".format(
+                    pos[0], pos[1], owner_id
+                )
+            )
 
     def send_update_chests(self, pos):
         """Sends an update to other players when you
@@ -211,18 +235,25 @@ class Game:
         Args:
             pos (tuple(int)): position of the chest
         """
-        udpate_msg = str(self.own_id) + " 6 " + "update" + \
-            "_" + str(pos[0]) + "/" + str(pos[1])
+        udpate_msg = (
+            str(self.own_id)
+            + " 6 "
+            + "update"
+            + "_"
+            + str(pos[0])
+            + "/"
+            + str(pos[1])
+        )
         self.network.send_global_message(udpate_msg)
 
     def is_chest_clickable(self, type, pos, tiles):
-        """Verifies if a chest is clickable by testing 
+        """Verifies if a chest is clickable by testing
         if it exists/is in range/is empty...
 
         Args:
             type (str): either "local" or "dist" for the type of chest
             pos (tuple(int)): the position of the player
-            tiles (tuple(int)): the tile on which the chest is 
+            tiles (tuple(int)): the tile on which the chest is
 
         Returns:
             [type]: [description]
@@ -233,16 +264,20 @@ class Game:
 
         # Local chests
         if type == "local":
-            return self.world_map.is_visible_tile(tileX, tileY) and \
-                self.world_map.local_chests[tileY][tileX] and \
-                self.world_map.local_chests[tileY][tileX].activable(pX, pY) and not \
-                self.world_map.local_chests[tileY][tileX].is_opened
+            return (
+                self.world_map.is_visible_tile(tileX, tileY)
+                and self.world_map.local_chests[tileY][tileX]
+                and self.world_map.local_chests[tileY][tileX].activable(pX, pY)
+                and not self.world_map.local_chests[tileY][tileX].is_opened
+            )
         # Distant chests
         elif type == "dist":
-            return self.world_map.is_visible_tile(tileX, tileY) and \
-                self.world_map.dist_chests[tileY][tileX] and \
-                self.world_map.dist_chests[tileY][tileX].activable(pX, pY) and not \
-                self.world_map.dist_chests[tileY][tileX].is_opened
+            return (
+                self.world_map.is_visible_tile(tileX, tileY)
+                and self.world_map.dist_chests[tileY][tileX]
+                and self.world_map.dist_chests[tileY][tileX].activable(pX, pY)
+                and not self.world_map.dist_chests[tileY][tileX].is_opened
+            )
 
     ### -- INVENTORY RELATED -- ###
 
@@ -259,12 +294,12 @@ class Game:
 
         # Item taken in the inventory
         if inventory.detect_item_inv(*event.pos):
-            item_on_mouse = inventory.inv_grid[inventory.gtoc_y(
-                event.pos[1])][inventory.gtoc_x(event.pos[0])]
-        # Item taken in the equipment
+            item_on_mouse = inventory.inv_grid[inventory.gtoc_y(event.pos[1])][
+                inventory.gtoc_x(event.pos[0])
+            ]
+        #  Item taken in the equipment
         elif inventory.detect_item_eq(*event.pos):
-            item_on_mouse = inventory.equipment[inventory.gtoc_x(
-                event.pos[0])]
+            item_on_mouse = inventory.equipment[inventory.gtoc_x(event.pos[0])]
         # If the item is already displaying a description we close it
         if item_on_mouse and item_on_mouse.display_desc:
             inventory.current_desc = None

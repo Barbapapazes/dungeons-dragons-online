@@ -22,6 +22,11 @@ typedef struct
  * @return char* the serialized bytes array
  */
 unsigned char *serialize_packet(game_packet g);
+/**
+ * @brief return the size of the packet 
+ * 
+ */
+int get_size_of_packet(unsigned char *s_packet);
 
 /**
  * @brief Transforms a serialized packet back to a structure

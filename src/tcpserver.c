@@ -50,13 +50,13 @@ int main(int argc, char *argv[])
     int opt = TRUE;
     //master socket is the server socket that will receive new connection curfds is current file descriptors (number of connection)
     //epollfd is the file descriptor that will be used to controll the epoll
-    int master_socket, addrlen, new_socket, activity, client_socket[MAXCLIENT], valread, curfds, epollfd;
+    int master_socket, addrlen, new_socket, activity, client_socket[MAXCLIENT], valread, curfds, epollfd, current_packet = 0;
     bzero(client_socket, MAXCLIENT);
     struct epoll_event ev;      // struct used to initialize the epoll
     struct epoll_event *events; // array that will contains fd with an activity
-
     struct sockaddr_in serv_addr;
-    char buffer[BUFSIZE];                                     //data buffer of 1K
+    char buffer[BUFSIZE]; //data buffer of 1K
+    char stdout_buffer[BUFSIZE];
     game_packet game_data = {0, -1, ""};                      // initialize a game_packet structure that will contain all the needed information
     static const game_packet empty_game_packet = {0, -1, ""}; // initialize a game_packet structure that will be used to reset the first one
 
@@ -134,27 +134,32 @@ int main(int argc, char *argv[])
             }
             else
             {
-                if ((valread = recv(events[n].data.fd, buffer, 2048, 0)) == 0)
-                {
-                    // disconnection
-                    epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, &ev);
-                    curfds--;
-                    close(events[n].data.fd);
-                    client_socket[n] = 0;
-                }
-                else
-                {
+                while ((valread = recv(events[n].data.fd, buffer, 2048, 0)) > 0)
+                    if (valread == 0)
+                    {
+                        // disconnection
+                        epoll_ctl(epollfd, EPOLL_CTL_DEL, events[n].data.fd, &ev);
+                        curfds--;
+                        close(events[n].data.fd);
+                        client_socket[n] = 0;
+                    }
+                    else
+                    {
 
-                    buffer[valread] = '\0'; // -1 to remove le \n
-                    if (strcmp(buffer, "") == 0)
-                        break;
-
-                    // format the packet received
-                    game_data = deserialize_packet((unsigned char *)buffer);
-                    sprintf(buffer, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
-                    write(STDOUT_FILENO, buffer, strlen(buffer));
-                    game_data = empty_game_packet;
-                }
+                        if (strcmp(buffer, "") == 0)
+                            break;
+                        while (TRUE)
+                        {
+                            // format the packet received
+                            game_data = deserialize_packet((unsigned char *)buffer + current_packet);
+                            sprintf(stdout_buffer, "%d %d %s", game_data.player_id, game_data.action, game_data.data);
+                            write(STDOUT_FILENO, stdout_buffer, strlen(stdout_buffer));
+                            if ((current_packet = (current_packet + get_size_of_packet((unsigned char *)buffer + current_packet))) >= valread)
+                                break;
+                        }
+                        game_data = empty_game_packet;
+                        current_packet = 0;
+                    }
             }
         }
     }
