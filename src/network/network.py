@@ -778,12 +778,10 @@ class Network:
         """Send all local enemy data to other player when first connecting
         """
         basic_line = str(self.game.own_id) + " 8 " + "1/"  # id + manage enemy + new enemy
-        print("Sending init enemies :", end=" ")
         for enemy in self.game.local_enemy_list:
             line = basic_line + str(enemy.id) + "/" + \
                 str(enemy.tileX) + "/" + str(enemy.tileY)
             self.send_message(line, target_ip)
-            print(enemy.id, end=" ")
 
 
     def send_enemy_update(self, e_id, pos, isNewEnemy=False):
@@ -809,9 +807,7 @@ class Network:
         data = data.split("/")
         enemy_id = int(data[1])
         pos = (int(data[2]), int(data[3]))
-        print("Received enemies update :", line)
         if int(data[0]):
-            print("Created distant enemy", enemy_id)
             self.game.distant_enemy_list[owner_id].append(
                 distant_Enemy(self.game.world_map, enemy_id, pos))
         else:

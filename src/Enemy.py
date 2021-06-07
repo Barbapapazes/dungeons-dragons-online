@@ -139,7 +139,6 @@ def manage_enemy(game):
 
 def find_enemy_by_id(enemy_list, enemy_id):
     """Return the enemy in e_list with e_id"""
-    print("Finding ", enemy_id, "list is", enemy_list)
     for enemy in enemy_list :
         if enemy.id == enemy_id :
             return enemy
