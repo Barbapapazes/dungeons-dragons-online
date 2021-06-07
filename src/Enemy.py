@@ -8,7 +8,7 @@ class Enemy:
     def __init__(self, map, e_id):
         self.id = e_id
         self.map = map
-        self.image = pg.image.load("src/assets/enemy.png")
+        self.image = None
         self.tileX, self.tileY = None, None
 
     def draw(self, display):
@@ -29,6 +29,7 @@ class local_Enemy(Enemy):
     def __init__(self, map, e_id):
         super().__init__(map, e_id)
         self.tileX, self.tileY = self.map.get_free_tile()
+        self.image = pg.image.load("src/assets/local_enemy.png")
         self.pause_turn = 1  # Pause the enemy during X turn
         self.futur_steps = []  # Will contain list of tile to go trough
         self.stats = {
@@ -106,6 +107,7 @@ class distant_Enemy(Enemy):
     def __init__(self, map, e_id, pos):
         super().__init__(map, e_id)
         self.tileX, self.tileY = pos
+        self.image = pg.image.load("src/assets/distant_enemy.png")
 
     def take_damage(self, damage):
         """Give damage to enemy"""
@@ -114,6 +116,7 @@ class distant_Enemy(Enemy):
     
 def manage_enemy(game):
     "Manage and create the enemy list"
+    # --- LOCAL ENEMIES --- #
     # Try to create a new enemy
     if game.own_id < 0 :
         #The connection is being established so we wait
@@ -129,6 +132,10 @@ def manage_enemy(game):
     for e in game.local_enemy_list:
         e.act(game.network)
         e.draw(game.display)
+    # --- DISTANT ENEMIES --- #
+    for e_list in game.distant_enemy_list.values():
+        for e in e_list:
+            e.draw(game.display)
 
 def find_enemy_by_id(enemy_list, enemy_id):
     """Return the enemy in e_list with e_id"""
