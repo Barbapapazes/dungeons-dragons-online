@@ -56,7 +56,8 @@ class Game:
             dict()
         )  # key is the client id, value is a DistantPlayer instance
         # ------ENEMY------ #
-        self.enemy_list = []
+        self.local_enemy_list = [] #Enemies managed by the local player
+        self.distant_enemy_list = dict() #Enemies managed by other players player_id:distant_enemy
         # ------MENUS------ #
         self.main_menu = MenuMain(self)
         self.character_menu = MenuCharacter(self)

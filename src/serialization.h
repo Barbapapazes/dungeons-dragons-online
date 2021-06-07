@@ -57,7 +57,7 @@ game_packet deserialize_packet(unsigned char *s_packet);
         -> 5 : Attack packet 
         -> 6 : Open chest
         -> 7 : Chatting
-        -> 8 : Move ennemies
+        -> 8 : Enemies managmeent (move and creation)
         -> 9 : Attack ennemies
         -> 10 : Change ID
         -> 11 : maybe more in the future...
