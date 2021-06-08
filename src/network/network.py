@@ -251,7 +251,7 @@ class Network:
 
         target_ip = self.get_data_from(line)
         new_id = self.generate_new_id()
-        self.game.other_player[int(new_id)] = DistantPlayer()
+        self.game.other_player[int(new_id)] = DistantPlayer(self.game)
         self.game.distant_enemy_list[int(new_id)] = []
         for ip in self.client_ip_port:
             # this loop sends to all other client the information (<ip>:<port>) of the new player
@@ -384,7 +384,7 @@ class Network:
         id = get_id_from_packet(line)
         ip = get_ip_from_packet(line)
         self.game.player_id[ip] = id
-        self.game.other_player[int(id)] = DistantPlayer()
+        self.game.other_player[int(id)] = DistantPlayer(self.game)
         self.game.distant_enemy_list[int(id)] = []
         print("[Server] New connection [" + id + "] ", "with ip :", ip)
         try:
@@ -507,7 +507,7 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
-        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer()
+        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer(self.game)
         self.game.distant_enemy_list[int(line.split(" ")[0])] = []
 
     def chat_message(self, line):

@@ -23,7 +23,11 @@ class Enemy:
         return(self.tileX, self.tileY)
 
     def walk(self, pos):
+        #Ex tile is now free
+        self.map.map[self.tileY][self.tileX].wall=False
         self.tileX, self.tileY = pos
+        #New pos is occupied
+        self.map.map[self.tileY][self.tileX].wall=True
 
 
 class local_Enemy(Enemy):
@@ -54,13 +58,10 @@ class local_Enemy(Enemy):
     def detect(self, local_Player, distant_Player):
         """Detect if a player is in range to be attacked"""
         if self.is_in_range(local_Player.get_current_pos()):
-            #Going as near the player we can
-            self.update_path(local_Player.get_current_pos())
             #Here you attack the player
             pass
         for d_player in distant_Player:
             if self.is_in_range(d_player.get_current_pos()):
-                self.update_path(d_player.get_current_pos())
                 #Here as well (d_player.id to have the id then use it with game dict for the ip)
                 pass
 
@@ -70,9 +71,14 @@ class local_Enemy(Enemy):
             # We do not act 4 times out of 15
             return
         if len(self.futur_steps) != 0:
-            # If we have a path; we continue to go through
-            self.walk(self.futur_steps.pop(0))
-            network.send_enemy_update(self.id, self.get_pos())
+            # If we have a path; we continue to go through, except if it's a wall
+            next_step = self.futur_steps.pop(0)
+            if (self.map.is_walkable_tile(*next_step)):
+                self.walk(next_step)
+                network.send_enemy_update(self.id, self.get_pos())
+            else:
+                #If the path is no more valid
+                self.update_path(self.random_dest())
         else:
             # The path is empty
             if self.pause_turn == 0:
