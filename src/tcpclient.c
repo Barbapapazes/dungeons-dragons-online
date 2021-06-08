@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
             }
             else if (send(socket->value, s_packet, packet_length, 0) == -1) // send the message
                 stop("send()");
-
+            send_all = 0;
             // gettimeofday(&ping_in, NULL); // get time in s and µs when the packet has been sent
 
             // if (recv(client[client_index].socket_fd, buffer, 2, 0) == -1) //wait for a server response

@@ -537,7 +537,6 @@ class Network:
 
             msg = msg.split(" ")
             self._client.stdin.write(str.encode(ip + "\n"))
-            print(ip + " ip")
             self._client.stdin.flush()
             for word in msg:
                 word += "\n"
