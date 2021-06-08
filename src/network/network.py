@@ -391,6 +391,7 @@ class Network:
             self.add_to_clients(ip)
         except Exception as e:
             print("Error new ip", e)
+        self.init_distant_enemy(ip)
 
     def disconnect(self, line):
         """handle a client disconnection :
@@ -404,6 +405,7 @@ class Network:
         try:
             client = self.get_data_from(line)
             self.remove_from_client(client)
+
             # self.kill(client)
             # self.remove_connexion(client)
         except Exception as e:
@@ -424,6 +426,7 @@ class Network:
         Args:
             client (string): ip:port
         """
+        del self.game.player_id[client]
         self._client.stdin.write(str.encode(str("-" + client + "\n")))
 
     def remove_from_player_id(self, client):
@@ -507,7 +510,9 @@ class Network:
         own_id = get_id_from_packet(line)
         self.game.player_id[ip] = line.split(" ")[0]
         self.game.own_id = int(own_id)
-        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer(self.game)
+        self.game.other_player[int(line.split(" ")[0])] = DistantPlayer(
+            self.game
+        )
         self.game.distant_enemy_list[int(line.split(" ")[0])] = []
 
     def chat_message(self, line):
@@ -532,6 +537,7 @@ class Network:
 
             msg = msg.split(" ")
             self._client.stdin.write(str.encode(ip + "\n"))
+            print(ip + " ip")
             self._client.stdin.flush()
             for word in msg:
                 word += "\n"
@@ -775,14 +781,20 @@ class Network:
 
     ### --- Enemy related --- ###
     def init_distant_enemy(self, target_ip):
-        """Send all local enemy data to other player when first connecting
-        """
-        basic_line = str(self.game.own_id) + " 8 " + "1/"  # id + manage enemy + new enemy
+        """Send all local enemy data to other player when first connecting"""
+        basic_line = (
+            str(self.game.own_id) + " 8 " + "1/"
+        )  # id + manage enemy + new enemy
         for enemy in self.game.local_enemy_list:
-            line = basic_line + str(enemy.id) + "/" + \
-                str(enemy.tileX) + "/" + str(enemy.tileY)
+            line = (
+                basic_line
+                + str(enemy.id)
+                + "/"
+                + str(enemy.tileX)
+                + "/"
+                + str(enemy.tileY)
+            )
             self.send_message(line, target_ip)
-
 
     def send_enemy_update(self, e_id, pos, isNewEnemy=False):
         """Send a message when a enemy is created or moving
@@ -809,8 +821,10 @@ class Network:
         pos = (int(data[2]), int(data[3]))
         if int(data[0]):
             self.game.distant_enemy_list[owner_id].append(
-                distant_Enemy(self.game.world_map, enemy_id, pos))
+                distant_Enemy(self.game.world_map, enemy_id, pos)
+            )
         else:
             enemy = find_enemy_by_id(
-                self.game.distant_enemy_list[owner_id], enemy_id)
+                self.game.distant_enemy_list[owner_id], enemy_id
+            )
             enemy.walk(pos)
