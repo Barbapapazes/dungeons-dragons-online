@@ -60,6 +60,7 @@ class local_Enemy(Enemy):
             pass
         for d_player in distant_Player:
             if self.is_in_range(d_player.get_current_pos()):
+                self.update_path(d_player.get_current_pos())
                 #Here as well (d_player.id to have the id then use it with game dict for the ip)
                 pass
 
