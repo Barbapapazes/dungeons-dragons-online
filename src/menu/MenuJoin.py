@@ -24,10 +24,6 @@ class MenuJoin(Menu):
     def __init__(self, game):
         Menu.__init__(self, game)
 
-        self.menu_background = pg.image.load(
-            path.join(menus_folder, "background.png")
-        ).convert_alpha()
-
         self.input_text = Text(
             self.game.display,
             self.game.resolution[0] // 2,
@@ -35,7 +31,7 @@ class MenuJoin(Menu):
             "Enter IP to join a game :",
             path.join(fonts_folder, "CascadiaCode.ttf"),
             WHITE,
-            15,
+            20,
             True,
         )
 
@@ -52,8 +48,8 @@ class MenuJoin(Menu):
 
         self.return_button = Button(
             self.game,
-            self.game.resolution[0] // 3,
-            self.game.resolution[1] // 2,
+            45,
+            45,
             "<",
             path.join(fonts_folder, "enchanted_land.otf"),
             WHITE,
