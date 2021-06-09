@@ -749,17 +749,18 @@ class Network:
         """
         print("[Chests] Sending chests before disconnetion")
         for pos in self.game.world_map.local_chests_pos:
-            msg = (
-                str(self.game.own_id)
-                + " 6 "
-                + "disconnect"
-                + "_"
-                + str(pos[0])
-                + "/"
-                + str(pos[1])
-            )
-            player_ip = random.choice(list(self.game.player_id.keys()))
-            self.send_message(msg, player_ip)
+            if not self.game.world_map.local_chests[pos[1]][pos[0]].is_opened:
+                msg = (
+                    str(self.game.own_id)
+                    + " 6 "
+                    + "disconnect"
+                    + "_"
+                    + str(pos[0])
+                    + "/"
+                    + str(pos[1])
+                )
+                player_ip = random.choice(list(self.game.player_id.keys()))
+                self.send_message(msg, player_ip)
 
     def send_new_ownership(self, parsed_data):
         """Sends the fact that we took ownership of the chest to other
