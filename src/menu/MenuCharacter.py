@@ -15,12 +15,8 @@ class MenuCharacter(Menu):
     def __init__(self, game):
         Menu.__init__(self, game)
 
-        self.menu_background = pg.image.load(
-            path.join(menus_folder, "background.png")
-        ).convert_alpha()
-
         self.name_text = Text(self.game.display, self.game.resolution[0] // 2, self.game.resolution[1]
-                              // 2 - 15, "Enter your character name :", path.join(fonts_folder, "CascadiaCode.ttf"), WHITE, 15, True)
+                              // 2 - 15, "Enter your character name :", path.join(fonts_folder, "CascadiaCode.ttf"), WHITE, 20, True)
 
         self.name_input = Input(self.game, self.game.resolution[0] // 2, self.game.resolution[1]
                                 // 2 + 25, 350, 40, path.join(fonts_folder, "CascadiaCode.ttf"), 20, 15)
@@ -45,8 +41,8 @@ class MenuCharacter(Menu):
         )
         self.return_button = Button(
             self.game,
-            self.game.resolution[0] // 3,
-            self.game.resolution[1] // 2,
+            45,
+            45,
             "<",
             path.join(fonts_folder, "enchanted_land.otf"),
             WHITE,
@@ -87,7 +83,7 @@ class MenuCharacter(Menu):
             self.game.playing = True
             self.game.player.set_nickname(self.name_input.get_text())
             self.game.world_map.generate_local_chests()
-        if self.join_button.is_clicked(event):
+        if self.join_button.is_clicked(event) and self.name_input.get_text():
             self.game.current_menu = self.game.join_menu
             self.displaying = False
             self.game.player.set_nickname(self.name_input.get_text())

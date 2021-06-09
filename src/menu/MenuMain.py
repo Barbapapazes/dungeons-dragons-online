@@ -15,7 +15,7 @@ class MenuMain(Menu):
             self.game,
             self.game.resolution[0] // 2,
             self.game.resolution[1] // 2,
-            "Character Customization",
+            "Play !",
             path.join(fonts_folder, "enchanted_land.otf"),
             WHITE,
             40,

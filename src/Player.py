@@ -80,7 +80,14 @@ class Player:
     def move(self):
         """Move the player to X,Y (counted in tiles)"""
         if len(self.futur_steps) != 0:
-            self.tileX, self.tileY = self.futur_steps.pop(0)
+            next_step = self.futur_steps.pop(0)
+            if not self.map.is_walkable_tile(*next_step) :
+                print("Oops, this path no longer work")
+                self.futur_steps.clear()
+                return
+            self.map.map[self.tileY][self.tileX].wall=False
+            self.tileX, self.tileY = next_step
+            self.map.map[self.tileY][self.tileX].wall=True
             # local move
             self.map.centered_in = [self.tileX, self.tileY]
             # Send move to other clients
@@ -140,10 +147,11 @@ class Player:
         self.stats["dexterity"] += eq_stats["dexterity"]
         
 class DistantPlayer:
-    def __init__(self):
+    def __init__(self, game):
         self.image = pg.image.load("src/assets/extern_player.png")
         self.tileX = 2  # Will have to put map start point here
         self.tileY = 2
+        self.game = game
         self.stats = {
             "strength": 0,
             "intelligence": 0,
@@ -166,6 +174,8 @@ class DistantPlayer:
         return (self.tileX, self.tileY)
 
     def move(self, X, Y):
+        self.game.world_map.map[self.tileY][self.tileX].wall=False
         self.tileX = X
         self.tileY = Y
+        self.game.world_map.map[self.tileY][self.tileX].wall=True
     

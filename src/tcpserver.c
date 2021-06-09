@@ -122,6 +122,9 @@ int main(int argc, char *argv[])
 
                 if (new_socket != 0)
                 {
+                    if (fcntl(new_socket, F_SETFL, opt | O_NONBLOCK) < 0)
+                        stop("socket");
+
                     client_socket[first_available_socket(client_socket, MAXCLIENT)] = new_socket;
                     ev.events = EPOLLIN | EPOLLET;
                     ev.data.fd = new_socket;
