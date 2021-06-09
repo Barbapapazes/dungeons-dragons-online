@@ -79,8 +79,19 @@ _Ce fichier a pour but de résumer la chronologie de notre projet, et comment no
 
 * Intégration totale de la sérialisation dans le jeu et travail sur l'ajout du personnage et des interfaces dans le jeu 
 
-## 21 Mars - 11 Avril 
+## 21 Mars - 15 Avril 
 
 * Ajout d'un chat dans le jeu qui permet aux joueurs de communiquer entre eux 
 * Améliorations des menus pour se connecter à d'autres jeu
 * Travail sur l'ajout d'un personnage et de son pathfinding pour pouvoir commencer à ajouter des monstres
+
+## 15 Avril - 15 Mai
+
+* Ajout de l'inventaire du personnage, de coffres (seulement en local), et d'une fiche personnage pour voir l'état de son personnage à tout instant 
+* Ajout des déplacements en réseaux du joueur
+
+## 15 Mai - 10 Juin
+
+* Ajout des coffres en réseaux, qui respectent la notion de propriété : on donne la propriété du coffre à qui veut l'ouvrir avant qu'il l'ouvre.
+* Ajout des ennemis en réseaux
+* Correction de la structure réseaux, qui utilisait un processus par connexion. Elle a été modifiée pour avoir seuelement deux processus, un côté "serveur" et un côté "client"

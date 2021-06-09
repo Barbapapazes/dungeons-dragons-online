@@ -29,5 +29,28 @@
 
 - Ajout du chat en jeu pour que les joueurs puissent communiquer entre eux 
 
-# Réunion du 15/03/2021
+# Réunion du 15/04/2021
 
+- Ajout de l'inventaire du joueur, de la fiche personnage pour voir l'état de son personnage
+- Début des déplacements du joueur en réseaux
+# Réunion du 11/05/2021
+
+- Problématique de la concurrence soulevée par le professeur : comme le jeu maintient un processus par connexion, il y a de la concurrence système ce qui pose problèmes (le passage à l'échelle est impossible avec une telle structure)
+- Déplacements des joueurs en réseaux finalisés
+
+# Réunion du 27/05/2021
+
+- Côté "client" : changement de un processus par connexion à un processus pour toutes les connexions 
+- Côté "serveur": toujours un processus par connexion
+
+# Réunion du 01/06/2021
+
+- Changement du côté serveur pour n'avoir qu'un seul processus pour toutes les connexions, avec l'utilisation de `epoll` à la place de `select` (le serveur et le client sont maintenant tous les deux avec un processus pour toutes les connexions)
+- Corrections et questions sur la notion de propriété pour les coffres
+- Travail sur les ennemis en réseaux
+- Corrections sur la fiche personnage et l'inventaire qui, lorsque ouverts, mettent le serveur du jeu en pause 
+
+# Réunion du 10/06/2021
+
+* Les coffres en réseaux sont finalisés et respectent le principe de propriété : on donne la propriété du coffre à celui qui veut l'ouvrir
+* Ajout d'ennemis en réseaux
