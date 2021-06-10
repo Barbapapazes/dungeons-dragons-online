@@ -426,7 +426,9 @@ class Network:
         Args:
             client (string): ip:port
         """
+
         del self.game.player_id[client]
+        self.client_ip_port.remove(client)
         self._client.stdin.write(str.encode(str("-" + client + "\n")))
 
     def remove_from_player_id(self, client):
