@@ -449,6 +449,9 @@ class Network:
         #Editing the map :
         pos = self.game.other_player[p_id].get_current_pos()
         self.game.world_map.map[pos[1]][pos[0]].wall=False
+        for enemy in self.game.distant_enemy_list[p_id]:
+            posE = enemy.get_pos()
+            self.game.world_map.map[posE[1]][posE[0]].wall=False
         del self.game.other_player[p_id]
         #Deleting all enemy of the player
         del self.game.distant_enemy_list[p_id]
