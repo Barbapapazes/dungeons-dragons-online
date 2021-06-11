@@ -140,8 +140,11 @@ class Game:
         self.current_menu.displaying = False
         try:
             self.network.send_chests_disconnect()
-        except:
-            print("Couldn't send chest on disconnection : nobody connected")
+            self.network.send_enemy_disconnect()
+        except IndexError:
+            print("Couldn't send chest/enemy on disconnection : nobody connected")
+
+        #print("Could not give the ownership of enemies to other players, they will die.")
         time.sleep(0.5)
         self.client.disconnect()
         time.sleep(0.5)

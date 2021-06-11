@@ -130,6 +130,7 @@ class distant_Enemy(Enemy):
     def __init__(self, map, e_id, pos):
         super().__init__(map, e_id)
         self.tileX, self.tileY = pos
+        self.map.map[self.tileY][self.tileX].wall=True
         self.image = pg.image.load("src/assets/distant_enemy.png")
 
     def take_damage(self, damage):
