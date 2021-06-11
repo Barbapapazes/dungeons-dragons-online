@@ -851,11 +851,12 @@ class Network:
         data = data.split("/")
         if int(data[0])==2 :
             type_ownership = data[1]
+            print("Type of owenership", type_ownership)
             enemy_id = int(data[2])
             pos = (int(data[3]), int(data[4]))
-            if not (len(self.game.local_enemy_list) >= 5) and (type_ownership==1):
+            if (len(self.game.local_enemy_list) < 5) and not (type_ownership==1):
                 #We already have fully enemy list, so we delete the enemy since there can not be as much enemy in the game
-                print("[ENEMY] You received the ownership of an enemy !")
+                print("[ENEMY] You received the ownership of an enemy !", len(self.game.local_enemy_list))
                 new_e = local_Enemy(self.game.world_map, enemy_id)
                 new_e.tileX, new_e.tileY = pos
                 self.send_enemy_update(
