@@ -6,7 +6,7 @@ import time
 import random
 import threading
 from src.Player import DistantPlayer
-from src.Enemy import distant_Enemy, find_enemy_by_id
+from src.Enemy import distant_Enemy, local_Enemy, find_enemy_by_id
 from src.Map import dict_img_obj, Chest, DistantChest
 from src.config.network import (
     CLIENT_PATH,
@@ -405,7 +405,8 @@ class Network:
         try:
             client = self.get_data_from(line)
             self.remove_from_client(client)
-
+            p_id = get_id_from_all_packet(line)
+            self.remove_from_other_player(p_id)
             # self.kill(client)
             # self.remove_connexion(client)
         except Exception as e:
@@ -440,13 +441,18 @@ class Network:
         del self.player_id[client]
 
     def remove_from_other_player(self, p_id):
-        """remove the player from the dict other_player
+        """remove the player from the game
 
         Args:
             p_id (int): id of the player to remove
         """
+        #Editing the map :
+        pos = self.game.other_player[p_id].get_current_pos()
+        self.game.world_map.map[pos[1]][pos[0]].wall=False
         del self.game.other_player[p_id]
+        #Deleting all enemy of the player
         del self.game.distant_enemy_list[p_id]
+
 
     def remove_connexion(self, client):
         """Delete the two threads associated to the client from the connections and ping dictionnary
@@ -798,6 +804,30 @@ class Network:
             )
             self.send_message(line, target_ip)
 
+    def send_enemy_disconnect(self):
+        """Sends to the first player in our player ip dict our enemies
+        before disconnecting
+        """
+        print("[Enemy] Sending enemies before disconnetion")
+        for enemy in self.game.local_enemy_list:
+            self.give_enemy_ownership(enemy, random.choice(list(self.game.player_id.keys())), isDisconnexion=True)
+
+    def give_enemy_ownership(self, enemy, player_ip, isDisconnexion=False):
+        msg = (
+            str(self.game.own_id)
+            + " 8 "
+            + "2/")
+        if isDisconnexion :
+            msg = msg + "1/"
+        else :
+            msg = msg + "0/"
+        msg =  (msg + str(enemy.id)
+            + "/"
+            + str(enemy.tileX)
+            + "/"
+            + str(enemy.tileY))
+        self.send_message(msg, player_ip)
+
     def send_enemy_update(self, e_id, pos, isNewEnemy=False):
         """Send a message when a enemy is created or moving
         Args:
@@ -819,14 +849,27 @@ class Network:
         owner_id = get_id_from_all_packet(line)
         data = self.get_data_from(line)
         data = data.split("/")
-        enemy_id = int(data[1])
-        pos = (int(data[2]), int(data[3]))
-        if int(data[0]):
-            self.game.distant_enemy_list[owner_id].append(
-                distant_Enemy(self.game.world_map, enemy_id, pos)
-            )
+        if int(data[0])==2 :
+            type_ownership = data[1]
+            enemy_id = int(data[2])
+            pos = (int(data[3]), int(data[4]))
+            if not (len(self.game.local_enemy_list) >= 5) and (type_ownership==1):
+                #We already have fully enemy list, so we delete the enemy since there can not be as much enemy in the game
+                print("[ENEMY] You received the ownership of an enemy !")
+                new_e = local_Enemy(self.game.world_map, enemy_id)
+                new_e.tileX, new_e.tileY = pos
+                self.send_enemy_update(
+                new_e.id, new_e.get_pos(), isNewEnemy=True)
+                self.game.local_enemy_list.append(new_e)
         else:
-            enemy = find_enemy_by_id(
-                self.game.distant_enemy_list[owner_id], enemy_id
-            )
-            enemy.walk(pos)
+            enemy_id = int(data[1])
+            pos = (int(data[2]), int(data[3]))
+            if int(data[0])==1:
+                self.game.distant_enemy_list[owner_id].append(
+                    distant_Enemy(self.game.world_map, enemy_id, pos)
+                )
+            else:
+                enemy = find_enemy_by_id(
+                    self.game.distant_enemy_list[owner_id], enemy_id
+                )
+                enemy.walk(pos)
