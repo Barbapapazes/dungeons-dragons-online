@@ -3,11 +3,11 @@
 from os import path
 from .assets import src_folder
 
-CLIENT_NAME = 'tcpclient'
+CLIENT_NAME = "tcpsender"
 CLIENT_PATH = path.join(src_folder, CLIENT_NAME)
 
 
-SERVER_NAME = 'tcpserver'
+SERVER_NAME = "tcpreceiver"
 SERVER_PATH = path.join(src_folder, SERVER_NAME)
 
 FIRST_CONNECTION = "0"

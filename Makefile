@@ -13,7 +13,7 @@ POC_NAMES = subprocess-popen/sub \
 POC_SRCS = $(addprefix $(POC_DIR),$(POC_NAMES))
 
 SRC_DIR = src/
-SRC_NAMES = tcpclient tcpserver
+SRC_NAMES = tcpsender tcpreceiver
 SRC_SRCS = $(addprefix $(SRC_DIR),$(SRC_NAMES))
 
 .PHONY: all init receive send clean poc
