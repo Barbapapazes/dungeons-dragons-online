@@ -103,8 +103,6 @@ class Map:
 
         # An object list that contains chests
         self.local_chests = [[None for tileX in range(len(self.map[tileY]))] for tileY in range(len(self.map))]
-        self.local_chests_pos = []
-        self.dist_chests_pos = []
         self.dist_chests = [[None for tileX in range(len(self.map[tileY]))] for tileY in range(len(self.map))]
         
     def init_views(self, mini_size, mini_coeff):
@@ -238,7 +236,6 @@ class Map:
         for i in range(10):
             coords = self.find_empty_tile()
             self.local_chests[coords[1]][coords[0]] = Chest(coords)
-            self.local_chests_pos.append(coords)
             # Chest hitbox
             self.map[coords[1]][coords[0]].wall = True
 
@@ -292,10 +289,8 @@ class Map:
             string = string.split("/")
             owner_id = string[2]
             position = tuple(map(int, (string[0], string[1])))
-            self.dist_chests_pos.append(position)
             self.dist_chests[position[1]][position[0]] = DistantChest(position, owner_id)
             self.map[position[1]][position[0]].wall = True
-            self.dist_chests_pos.append(position)
 
 class MapObject:
     """A class of object on map"""

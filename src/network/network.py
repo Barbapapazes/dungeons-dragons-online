@@ -225,7 +225,7 @@ class Network:
                 if parsed_data[0] == "update":
                     self.update_chests(parsed_data[1:])
                 if parsed_data[0] == "changeowner":
-                    self.change_owner(parsed_data[1:])
+                    self.update_dist_chest_owner(parsed_data[1:])
 
             elif action == CHAT:
                 self.chat_message(line)
@@ -322,35 +322,38 @@ class Network:
             target_ip (str): IP+port of the connection player
         """
         # LOCAL CHESTS
-        local_chests_pos = self.game.world_map.local_chests_pos
+        local_chests = self.game.world_map.local_chests
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
         # Formatting and adding the message every local chest pos (i know the game id is already in the first field but it's easier for me like this first)
-        for chest_pos in local_chests_pos:
-            pos_msg += (
-                "_"
-                + str(chest_pos[0])
-                + "/"
-                + str(chest_pos[1])
-                + "/"
-                + str(self.game.own_id)
-            )
+        for sublist in local_chests:
+            for chest in sublist:
+                if chest and not chest.is_opened:
+                    pos_msg += (
+                        "_"
+                        + str(chest.tileX)
+                        + "/"
+                        + str(chest.tileY)
+                        + "/"
+                        + str(self.game.own_id)
+                    )
         # Sending packet
         self.send_message(pos_msg, target_ip)
 
         # DISTANT CHESTS
-        dist_chests_pos = self.game.world_map.dist_chests_pos
         dist_chests = self.game.world_map.dist_chests
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
         # Formatting and adding the message every local chest pos
-        for chest_pos in dist_chests_pos:
-            pos_msg += (
-                "_"
-                + str(chest_pos[0])
-                + "/"
-                + str(chest_pos[1])
-                + "/"
-                + str(dist_chests[chest_pos[1]][chest_pos[0]].owner_id)
-            )
+        for sublist in dist_chests:
+            for chest in sublist:
+                if chest and not chest.is_opened:
+                    pos_msg += (
+                        "_"
+                        + str(chest.tileX)
+                        + "/"
+                        + str(chest.tileY)
+                        + "/"
+                        + str(chest.owner_id)
+                    )
         # Sending packet
         self.send_message(pos_msg, target_ip)
 
@@ -595,29 +598,30 @@ class Network:
         """This function is called when a client connects to
         the host of the game, after the ID change (to get the right owner ID for
         chests). It sends to every other players the position of the new client local chests"""
-        local_chests_pos = self.game.world_map.local_chests_pos
-        local_chests = self.game.world_map.local_chests
 
         # Generating local chests
         self.game.world_map.generate_local_chests()
 
-        # Updating chests ID
-        for pos in local_chests_pos:
-            local_chests[pos[1]][pos[0]].owner_id = self.game.own_id
+        # Updating local chests ID
+        for sublist in self.game.world_map.local_chests:
+            for chest in sublist:
+                if chest: chest.owner_id = self.game.own_id
 
         pos_msg = str(self.game.own_id) + " 6 " + "positions"
         # Formatting and adding the message every local chest pos
-        for chest_pos in local_chests_pos:
-            pos_msg += (
-                "_"
-                + str(chest_pos[0])
-                + "/"
-                + str(chest_pos[1])
-                + "/"
-                + str(self.game.own_id)
-            )
+        for sublist in self.game.world_map.local_chests:
+            for chest in sublist:
+                if chest and not chest.is_opened:
+                    pos_msg += (
+                        "_"
+                        + str(chest.tileX)
+                        + "/"
+                        + str(chest.tileY)
+                        + "/"
+                        + str(self.game.own_id)
+                    )
         # Sending packet
-        self.game.network.send_global_message(pos_msg)
+        self.game.network.send_global_message(pos_msg, chat=False)
 
     def handle_requested_chest(self, parsed_data, player_id):
         """Handles what to do when receiving a chest request
@@ -665,6 +669,7 @@ class Network:
                 self.game.world_map.dist_chests[pos[1]][pos[0]] = DistantChest(
                     pos, int(player_id)
                 )
+                
 
                 udpate_msg = (
                     str(self.game.own_id)
@@ -740,7 +745,7 @@ class Network:
                 self.game.player
             )
 
-    def change_owner(self, parsed_data):
+    def update_dist_chest_owner(self, parsed_data):
         """Changes the owner of the distant chest when a change owner packet
         is received. If it's our chest, do nothing
 
@@ -759,19 +764,21 @@ class Network:
         before disconnecting
         """
         print("[Chests] Sending chests before disconnetion")
-        for pos in self.game.world_map.local_chests_pos:
-            if not self.game.world_map.local_chests[pos[1]][pos[0]].is_opened:
-                msg = (
-                    str(self.game.own_id)
-                    + " 6 "
-                    + "disconnect"
-                    + "_"
-                    + str(pos[0])
-                    + "/"
-                    + str(pos[1])
-                )
-                player_ip = random.choice(list(self.game.player_id.keys()))
-                self.send_message(msg, player_ip)
+        for sublist in self.game.world_map.local_chests:
+            for chest in sublist:
+                if chest and not chest.is_opened:
+                    msg = (
+                        str(self.game.own_id)
+                        + " 6 "
+                        + "disconnect"
+                        + "_"
+                        + str(chest.tileX)
+                        + "/"
+                        + str(chest.tileY)
+                    )
+                    player_ip = random.choice(list(self.game.player_id.keys()))
+                    self.send_message(msg, player_ip)
+                    time.sleep(0.1)
 
     def send_new_ownership(self, parsed_data):
         """Sends the fact that we took ownership of the chest to other
@@ -788,7 +795,7 @@ class Network:
             + "_"
             + str(self.game.own_id)
         )
-        self.send_global_message(msg)
+        self.send_global_message(msg, chat=False)
 
     ### --- Enemy related --- ###
     def init_distant_enemy(self, target_ip):

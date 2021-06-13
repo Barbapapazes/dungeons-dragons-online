@@ -266,22 +266,24 @@ class Game:
         tileX, tileY = tiles
         pX, pY = pos
 
-        # Local chests
-        if type == "local":
-            return (
-                self.world_map.is_visible_tile(tileX, tileY)
-                and self.world_map.local_chests[tileY][tileX]
-                and self.world_map.local_chests[tileY][tileX].activable(pX, pY)
-                and not self.world_map.local_chests[tileY][tileX].is_opened
-            )
-        # Distant chests
-        elif type == "dist":
-            return (
-                self.world_map.is_visible_tile(tileX, tileY)
-                and self.world_map.dist_chests[tileY][tileX]
-                and self.world_map.dist_chests[tileY][tileX].activable(pX, pY)
-                and not self.world_map.dist_chests[tileY][tileX].is_opened
-            )
+        try:
+            # Local chests
+            if type == "local":
+                return (
+                    self.world_map.is_visible_tile(tileX, tileY)
+                    and self.world_map.local_chests[tileY][tileX]
+                    and self.world_map.local_chests[tileY][tileX].activable(pX, pY)
+                    and not self.world_map.local_chests[tileY][tileX].is_opened
+                )
+            # Distant chests
+            elif type == "dist":
+                return (
+                    self.world_map.is_visible_tile(tileX, tileY)
+                    and self.world_map.dist_chests[tileY][tileX]
+                    and self.world_map.dist_chests[tileY][tileX].activable(pX, pY)
+                    and not self.world_map.dist_chests[tileY][tileX].is_opened
+                )
+        except: return False
 
     ### -- INVENTORY RELATED -- ###
 
